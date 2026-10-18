@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -20,79 +21,101 @@ type Candle = {
 export default function PriceChart({ coin }: { coin: string }) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  const [interval, setInterval] = useState("1h");
+  const [selectedInterval, setSelectedInterval] = useState("1h");
   const [candles, setCandles] = useState<Candle[]>([]);
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
 
+  // Fetch candle data for the selected timeframe.
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
 
-    fetch(
-      `/api/candles?coin=${encodeURIComponent(
-        coin
-      )}&interval=${interval}`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        setCandles(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Candle API error:", error);
-        setLoading(false);
-      });
-  }, [coin, interval, refresh]);
+    async function loadCandles() {
+      setLoading(true);
+
+      try {
+        const response = await fetch(
+          `/api/candles?coin=${encodeURIComponent(
+            coin
+          )}&interval=${selectedInterval}`,
+          { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Candle API returned ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid candle data returned by API.");
+        }
+
+        if (!cancelled) {
+          setCandles(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Candle API error:", error);
+          setCandles([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCandles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [coin, selectedInterval, refresh]);
+
+  // Refresh chart data every 10 seconds.
   useEffect(() => {
-  const timer = setInterval(() => {
-    setRefresh((value) => value + 1);
-  }, 10000);
+    const timer = window.setInterval(() => {
+      setRefresh((value) => value + 1);
+    }, 10000);
 
-  return () => clearInterval(timer);
-}, []);
+    return () => window.clearInterval(timer);
+  }, []);
 
+  // Create and update the chart.
   useEffect(() => {
-    if (!chartContainerRef.current || candles.length === 0) {
+    const container = chartContainerRef.current;
+
+    if (!container || candles.length === 0) {
       return;
     }
 
-    const chart = createChart(chartContainerRef.current, {
+    const chart = createChart(container, {
       layout: {
         background: { color: "#0d0d0d" },
         textColor: "#777",
       },
-
       grid: {
         vertLines: { color: "#151515" },
         horzLines: { color: "#151515" },
       },
-
-      width: chartContainerRef.current.clientWidth,
+      width: container.clientWidth,
       height: 500,
-
       timeScale: {
         borderColor: "#222",
       },
-
       rightPriceScale: {
         borderColor: "#222",
       },
     });
 
-    // -----------------------------
-    // PRICE CANDLESTICKS
-    // -----------------------------
-
-    const candlestickSeries = chart.addSeries(
-      CandlestickSeries,
-      {
-        upColor: "#22c55e",
-        downColor: "#ef4444",
-        borderVisible: false,
-        wickUpColor: "#22c55e",
-        wickDownColor: "#ef4444",
-      }
-    );
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
+      upColor: "#22c55e",
+      downColor: "#ef4444",
+      borderVisible: false,
+      wickUpColor: "#22c55e",
+      wickDownColor: "#ef4444",
+    });
 
     candlestickSeries.setData(
       candles.map((candle) => ({
@@ -104,20 +127,12 @@ export default function PriceChart({ coin }: { coin: string }) {
       }))
     );
 
-    // -----------------------------
-    // VOLUME
-    // -----------------------------
-
-    const volumeSeries = chart.addSeries(
-      HistogramSeries,
-      {
-        priceFormat: {
-          type: "volume",
-        },
-
-        priceScaleId: "volume",
-      }
-    );
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: {
+        type: "volume",
+      },
+      priceScaleId: "volume",
+    });
 
     volumeSeries.priceScale().applyOptions({
       scaleMargins: {
@@ -130,7 +145,6 @@ export default function PriceChart({ coin }: { coin: string }) {
       candles.map((candle) => ({
         time: Math.floor(candle.t / 1000) as any,
         value: Number(candle.v),
-
         color:
           Number(candle.c) >= Number(candle.o)
             ? "#22c55e"
@@ -139,10 +153,6 @@ export default function PriceChart({ coin }: { coin: string }) {
     );
 
     chart.timeScale().fitContent();
-
-    // -----------------------------
-    // RESPONSIVE RESIZE
-    // -----------------------------
 
     const handleResize = () => {
       if (chartContainerRef.current) {
@@ -155,11 +165,7 @@ export default function PriceChart({ coin }: { coin: string }) {
     window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener(
-        "resize",
-        handleResize
-      );
-
+      window.removeEventListener("resize", handleResize);
       chart.remove();
     };
   }, [candles]);
@@ -201,40 +207,35 @@ export default function PriceChart({ coin }: { coin: string }) {
             display: "flex",
             gap: "8px",
             marginTop: "20px",
+            flexWrap: "wrap",
           }}
         >
-          {["1h", "4h", "12h", "1d"].map(
-            (value) => (
-              <button
-                key={value}
-                onClick={() => setInterval(value)}
-                style={{
-                  background:
-                    interval === value
-                      ? "#fff"
-                      : "#111",
-
-                  color:
-                    interval === value
-                      ? "#000"
-                      : "#777",
-
-                  border: "1px solid #333",
-                  borderRadius: "5px",
-                  padding: "6px 12px",
-                  cursor: "pointer",
-                }}
-              >
-                {value.toUpperCase()}
-              </button>
-            )
-          )}
+          {["1h", "4h", "12h", "1d"].map((value) => (
+            <button
+              key={value}
+              onClick={() => setSelectedInterval(value)}
+              style={{
+                background:
+                  selectedInterval === value ? "#fff" : "#111",
+                color:
+                  selectedInterval === value ? "#000" : "#777",
+                border: "1px solid #333",
+                borderRadius: "5px",
+                padding: "6px 12px",
+                cursor: "pointer",
+              }}
+            >
+              {value.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
 
       {loading ? (
-        <p style={{ color: "#666" }}>
-          Loading chart...
+        <p style={{ color: "#666" }}>Loading chart...</p>
+      ) : candles.length === 0 ? (
+        <p style={{ color: "#888" }}>
+          No candle data available for this timeframe. Please try again later.
         </p>
       ) : (
         <div
