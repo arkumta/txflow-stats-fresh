@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const links = [
@@ -11,14 +11,16 @@ const links = [
   { label: "Fees", href: "/fees" },
 ];
 
-export default function Navbar() {
+function NavbarContent() {
   const pathname = usePathname();
 
   const [wallet, setWallet] = useState("");
   const [searchError, setSearchError] = useState("");
   const [searching, setSearching] = useState(false);
 
-  async function handleSearch(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSearch(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     const query = wallet.trim();
@@ -93,7 +95,9 @@ export default function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              className={`txflow-nav-link${active ? " txflow-nav-link-active" : ""}`}
+              className={`txflow-nav-link${
+                active ? " txflow-nav-link-active" : ""
+              }`}
               aria-current={active ? "page" : undefined}
               style={
                 active
@@ -144,5 +148,24 @@ export default function Navbar() {
         </a>
       </div>
     </nav>
+  );
+}
+
+export default function Navbar() {
+  return (
+    <Suspense
+      fallback={
+        <nav className="txflow-navbar">
+          <a href="/" className="txflow-brand">
+            <span className="txflow-brand-mark">T</span>
+            <span className="txflow-brand-title">
+              TXFLOW <span>STATS</span>
+            </span>
+          </a>
+        </nav>
+      }
+    >
+      <NavbarContent />
+    </Suspense>
   );
 }
