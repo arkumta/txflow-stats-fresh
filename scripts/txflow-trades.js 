@@ -1,0 +1,61 @@
+const WebSocket = require("ws");
+
+const ws = new WebSocket("wss://api.txflow-testnet.xyz/ws");
+
+ws.on("open", () => {
+  console.log("Connected to TxFlow WebSocket");
+
+  ws.send(
+    JSON.stringify({
+      method: "subscribe",
+      subscription: {
+        type: "trades",
+        coin: "BTC-USDC",
+        instrumentId: 1,
+      },
+    })
+  );
+
+  console.log("Subscribed to BTC-USDC trades");
+});
+
+ws.on("message", async (message) => {
+  try {
+    const data = JSON.parse(message.toString());
+
+    console.log("Trade received:", data);
+
+    if (data.channel === "trades" && data.data) {
+      const trades = Array.isArray(data.data)
+        ? data.data
+        : [data.data];
+
+      for (const trade of trades) {
+        const response = await fetch(
+          "http://localhost:3000/api/save-trade",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(trade),
+          }
+        );
+
+        const result = await response.json();
+
+        console.log("Saved:", result);
+      }
+    }
+  } catch (error) {
+    console.error("Error processing trade:", error);
+  }
+});
+
+ws.on("error", (error) => {
+  console.error("WebSocket error:", error);
+});
+
+ws.on("close", () => {
+  console.log("WebSocket disconnected");
+});

@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "startTimeMs": 1789257600000,
+  "endTimeMs": 1789344000000,
+  "walletScope": [
+    "0x00032328856c0ea5bbf10341ef3009050282479a"
+  ],
+  "completedWallets": [
+    "0x00032328856c0ea5bbf10341ef3009050282479a"
+  ],
+  "completedWindows": [
+    "0x00032328856c0ea5bbf10341ef3009050282479a:1789257600000:1789344000000"
+  ],
+  "updatedAt": "2026-10-13T11:01:49.947Z"
+}
