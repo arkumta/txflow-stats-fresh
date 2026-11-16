@@ -1,688 +1,269 @@
-
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import PriceChart from "../../components/PriceChart";
 
-type Market = {
+type MarketMeta = {
   name: string;
-  index?: number;
   maxLeverage?: number;
   haltTrading?: boolean;
   delisted?: boolean;
 };
 
-type MarketData = {
-  coin: string;
-  lastPrice?: string | number;
-  markPx?: string | number;
-  oraclePx?: string | number;
-  prevDayPx?: string | number;
-  dayNtlVlm?: string | number;
-  dayHighPx?: string | number;
-  dayLowPx?: string | number;
-  openInterest?: string | number;
+type MarketContext = {
+  coin?: string;
+  lastPrice?: number | string;
+  markPx?: number | string;
+  oraclePx?: number | string;
+  prevDayPx?: number | string;
+  dayNtlVlm?: number | string;
+  dayHighPx?: number | string;
+  dayLowPx?: number | string;
+  openInterest?: number | string;
   nodeCtx?: {
-    funding?: string | number;
-    markPx?: string | number;
-    lastPrice?: string | number;
+    funding?: number | string;
+    markPx?: number | string;
+    lastPrice?: number | string;
   };
 };
 
-type SortKey = "volume" | "price" | "openInterest" | "funding" | "change";
-
 const LIME = "#c7f36b";
+const MUTED = "#92998a";
+const PANEL = "#11140f";
+const BORDER = "#292f23";
 
-function number(value: unknown): number {
-  if (value === null || value === undefined || value === "") return 0;
+function toNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function money(value: number, decimals = 2): string {
-  if (!Number.isFinite(value)) return "—";
-
-  return value.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-}
-
-function compactMoney(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-
+function money(value: number | null, compact = false): string {
+  if (value === null) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    notation: "compact",
-    maximumFractionDigits: 2,
+    notation: compact ? "compact" : "standard",
+    maximumFractionDigits: compact ? 2 : value >= 100 ? 2 : 6,
   }).format(value);
 }
 
-function price(value: number): string {
-  if (!value) return "—";
-
-  return money(value, value >= 100 ? 2 : value >= 1 ? 4 : 6);
+function signedPercent(value: number | null): string {
+  if (value === null) return "—";
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
-function percent(value: number, decimals = 2): string {
-  return `${value > 0 ? "+" : ""}${value.toFixed(decimals)}%`;
-}
-
-function MarketIcon({ name }: { name: string }) {
-  const symbol = name.split("-")[0].replace(/[^a-zA-Z0-9]/g, "");
-
+function MarketMark({ name }: { name: string }) {
+  const symbol = name.split("-")[0].replace(/[^a-zA-Z0-9]/g, "").slice(0, 4);
   return (
-    <div
-      style={{
-        width: 38,
-        height: 38,
-        borderRadius: 12,
-        background: "#20271b",
-        border: "1px solid #39452a",
-        display: "grid",
-        placeItems: "center",
-        color: LIME,
-        fontWeight: 800,
-        fontSize: symbol.length > 4 ? 10 : 12,
-        flexShrink: 0,
-      }}
-    >
-      {symbol.slice(0, 4).toUpperCase()}
+    <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 15, display: "grid", placeItems: "center", background: "#20271b", border: "1px solid #39452a", color: LIME, fontSize: 13, fontWeight: 850 }}>
+      {symbol.toUpperCase()}
     </div>
   );
 }
 
-export default function MarketsPage() {
-  const [markets, setMarkets] = useState<Market[]>([]);
-  const [marketData, setMarketData] = useState<MarketData[]>([]);
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<SortKey>("volume");
-  const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
-  const [showInactive, setShowInactive] = useState(false);
+export default function MarketDetailPage() {
+  const params = useParams<{ market: string }>();
+  const marketName = useMemo(() => {
+    const value = params?.market;
+    if (!value) return "";
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }, [params]);
+
+  const [market, setMarket] = useState<MarketMeta | null>(null);
+  const [context, setContext] = useState<MarketContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const loadMarkets = useCallback(async (manual = false) => {
+  const loadMarket = useCallback(async (manual = false) => {
+    if (!marketName) return;
     if (manual) setRefreshing(true);
     setError("");
 
     try {
-      const [listResponse, dataResponse] = await Promise.all([
+      const [metaResponse, contextResponse] = await Promise.all([
         fetch("/api/market-list", { cache: "no-store" }),
-        fetch("/api/market-data", { cache: "no-store" }),
+        fetch(`/api/markets?coin=${encodeURIComponent(marketName)}`, { cache: "no-store" }),
       ]);
 
-      if (!listResponse.ok || !dataResponse.ok) {
-        throw new Error("Market data is temporarily unavailable.");
+      if (!metaResponse.ok || !contextResponse.ok) {
+        throw new Error("Market data is temporarily unavailable. Please try again.");
       }
 
-      const [listResult, dataResult] = await Promise.all([
-        listResponse.json(),
-        dataResponse.json(),
+      const [metaResult, contextResult] = await Promise.all([
+        metaResponse.json(),
+        contextResponse.json(),
       ]);
 
-      if (!Array.isArray(listResult) || !Array.isArray(dataResult)) {
-        throw new Error("The market API returned an unexpected response.");
+      if (!Array.isArray(metaResult)) {
+        throw new Error("Unexpected market list response.");
       }
 
-      setMarkets(listResult);
-      setMarketData(dataResult);
+      const foundMarket = metaResult.find((item: MarketMeta) => item.name === marketName) ?? null;
+      if (!foundMarket) {
+        setMarket(null);
+        setContext(null);
+        throw new Error(`${marketName} was not found in the current Txflow market list.`);
+      }
+
+      setMarket(foundMarket);
+      setContext(contextResult);
       setLastUpdated(new Date());
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to load markets. Please try again."
-      );
+      setError(err instanceof Error ? err.message : "Unable to load this market.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [marketName]);
 
   useEffect(() => {
-    void loadMarkets();
+    void loadMarket();
+    const timer = window.setInterval(() => void loadMarket(), 30000);
+    return () => window.clearInterval(timer);
+  }, [loadMarket]);
 
-    const interval = setInterval(() => {
-      void loadMarkets();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [loadMarkets]);
-
-  const dataByCoin = useMemo(() => {
-    return new Map(marketData.map((item) => [item.coin, item]));
-  }, [marketData]);
-
-  const rows = useMemo(() => {
-    return markets
-      .filter((market) => {
-        if (!showInactive && (market.haltTrading || market.delisted)) {
-          return false;
-        }
-
-        return market.name.toLowerCase().includes(search.trim().toLowerCase());
-      })
-      .map((market) => {
-        const data = dataByCoin.get(market.name);
-        const lastPrice = number(data?.lastPrice ?? data?.nodeCtx?.lastPrice);
-        const markPrice = number(data?.markPx ?? data?.nodeCtx?.markPx);
-        const effectivePrice = lastPrice || markPrice;
-        const previousPrice = number(data?.prevDayPx);
-        const volume = number(data?.dayNtlVlm);
-        const openInterest = number(data?.openInterest) * (markPrice || effectivePrice);
-        const funding = number(data?.nodeCtx?.funding);
-        const change =
-          previousPrice > 0
-            ? ((effectivePrice - previousPrice) / previousPrice) * 100
-            : null;
-
-        return {
-          ...market,
-          data,
-          lastPrice: effectivePrice,
-          markPrice,
-          volume,
-          openInterest,
-          funding,
-          change,
-          high: number(data?.dayHighPx),
-          low: number(data?.dayLowPx),
-        };
-      })
-      .sort((a, b) => {
-        const direction = sortDirection === "desc" ? -1 : 1;
-
-        const aValue =
-          sortBy === "volume"
-            ? a.volume
-            : sortBy === "price"
-              ? a.lastPrice
-              : sortBy === "openInterest"
-                ? a.openInterest
-                : sortBy === "funding"
-                  ? a.funding
-                  : a.change ?? Number.NEGATIVE_INFINITY;
-
-        const bValue =
-          sortBy === "volume"
-            ? b.volume
-            : sortBy === "price"
-              ? b.lastPrice
-              : sortBy === "openInterest"
-                ? b.openInterest
-                : sortBy === "funding"
-                  ? b.funding
-                  : b.change ?? Number.NEGATIVE_INFINITY;
-
-        return (aValue - bValue) * direction;
-      });
-  }, [markets, dataByCoin, search, sortBy, sortDirection, showInactive]);
-
-  const totals = useMemo(() => {
-    const active = markets.filter(
-      (market) => !market.haltTrading && !market.delisted
-    );
-
-    const totalVolume = marketData.reduce(
-      (sum, item) => sum + number(item.dayNtlVlm),
-      0
-    );
-
-    const totalOpenInterest = marketData.reduce((sum, item) => {
-      const mark = number(item.markPx ?? item.nodeCtx?.markPx);
-      const last = number(item.lastPrice ?? item.nodeCtx?.lastPrice);
-      return sum + number(item.openInterest) * (mark || last);
-    }, 0);
+  const stats = useMemo(() => {
+    const last = toNumber(context?.lastPrice ?? context?.nodeCtx?.lastPrice);
+    const mark = toNumber(context?.markPx ?? context?.nodeCtx?.markPx);
+    const effective = last ?? mark;
+    const previous = toNumber(context?.prevDayPx);
+    const change = effective !== null && previous !== null && previous > 0
+      ? ((effective - previous) / previous) * 100
+      : null;
+    const oiContracts = toNumber(context?.openInterest);
+    const oiPrice = mark ?? effective;
+    const openInterest = oiContracts !== null && oiPrice !== null
+      ? oiContracts * oiPrice
+      : null;
 
     return {
-      totalVolume,
-      totalOpenInterest,
-      activeMarkets: active.length,
-      listedMarkets: markets.length,
+      last,
+      mark,
+      oracle: toNumber(context?.oraclePx),
+      change,
+      volume: toNumber(context?.dayNtlVlm),
+      openInterest,
+      funding: toNumber(context?.nodeCtx?.funding),
+      high: toNumber(context?.dayHighPx),
+      low: toNumber(context?.dayLowPx),
     };
-  }, [markets, marketData]);
+  }, [context]);
 
-  const cardStyle = {
-    background: "#11130f",
-    border: "1px solid #292d25",
+  const cardStyle: React.CSSProperties = {
+    background: `linear-gradient(145deg, #171d12 0%, ${PANEL} 72%)`,
+    border: `1px solid ${BORDER}`,
     borderRadius: 16,
-    padding: 22,
+    padding: 21,
     minWidth: 0,
-  } as const;
+  };
 
-  const muted = "#8b9085";
+  const labelStyle: React.CSSProperties = {
+    color: MUTED,
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: 1,
+  };
 
-  function changeSort(key: SortKey) {
-    if (sortBy === key) {
-      setSortDirection((previous) => previous === "desc" ? "asc" : "desc");
-    } else {
-      setSortBy(key);
-      setSortDirection("desc");
-    }
-  }
+  const valueStyle: React.CSSProperties = {
+    fontSize: "clamp(20px, 3vw, 27px)",
+    fontWeight: 800,
+    letterSpacing: "-0.7px",
+    marginTop: 13,
+    overflowWrap: "anywhere",
+  };
 
-  function sortLabel(key: SortKey, label: string) {
-    return (
-      <button
-        type="button"
-        onClick={() => changeSort(key)}
-        style={{
-          border: 0,
-          background: "transparent",
-          color: sortBy === key ? LIME : muted,
-          fontSize: 11,
-          fontWeight: 700,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-          padding: "12px 10px",
-          textAlign: "right",
-        }}
-      >
-        {label} {sortBy === key ? (sortDirection === "desc" ? "↓" : "↑") : ""}
-      </button>
-    );
+  if (!marketName) {
+    return <main style={{ minHeight: "70vh", padding: 32, color: "#f2f4ed" }}>Loading market…</main>;
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#090a08",
-        color: "#f5f6f2",
-        padding: "30px 0 70px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1440,
-          padding: "0 28px",
-          margin: "0 auto",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            color: muted,
-            fontSize: 12,
-            marginBottom: 22,
-          }}
-        >
-          <Link href="/" style={{ color: muted, textDecoration: "none" }}>
-            Dashboard
-          </Link>
-          <span>/</span>
-          <span style={{ color: LIME }}>Markets</span>
+    <main style={{ minHeight: "100vh", background: "#090b08", color: "#f2f4ed", padding: "28px 0 70px" }}>
+      <div style={{ width: "min(1440px, calc(100% - 40px))", margin: "0 auto" }}>
+        <div style={{ display: "flex", gap: 9, alignItems: "center", color: MUTED, fontSize: 12, marginBottom: 24 }}>
+          <Link href="/" style={{ color: MUTED }}>Dashboard</Link><span>/</span>
+          <Link href="/markets" style={{ color: MUTED }}>Markets</Link><span>/</span>
+          <span style={{ color: LIME }}>{marketName}</span>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            gap: 20,
-            flexWrap: "wrap",
-            marginBottom: 30,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                color: LIME,
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: 2,
-                marginBottom: 12,
-              }}
-            >
-              TXFLOW PERPETUALS
-            </div>
-            <h1
-              style={{
-                fontSize: "clamp(32px, 5vw, 48px)",
-                lineHeight: 1.1,
-                letterSpacing: -1.5,
-                margin: "0 0 12px",
-                fontWeight: 750,
-              }}
-            >
-              Markets
-            </h1>
-            <p style={{ color: muted, margin: 0, fontSize: 14 }}>
-              Explore prices, trading volume, open interest and funding rates.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void loadMarkets(true)}
-            disabled={refreshing}
-            style={{
-              background: "#c7f36b",
-              color: "#11150b",
-              border: 0,
-              borderRadius: 10,
-              padding: "12px 17px",
-              fontWeight: 800,
-              cursor: refreshing ? "wait" : "pointer",
-              opacity: refreshing ? 0.7 : 1,
-            }}
-          >
-            {refreshing ? "Refreshing..." : "↻ Refresh markets"}
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-            gap: 14,
-            marginBottom: 28,
-          }}
-        >
-          <div style={cardStyle}>
-            <div style={{ color: muted, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
-              24H TRADING VOLUME
-            </div>
-            <div style={{ fontSize: 29, fontWeight: 750, marginTop: 15 }}>
-              {loading && !marketData.length ? "Loading..." : compactMoney(totals.totalVolume)}
-            </div>
-            <div style={{ color: muted, fontSize: 12, marginTop: 9 }}>
-              Across available markets
-            </div>
-          </div>
-
-          <div style={cardStyle}>
-            <div style={{ color: muted, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
-              OPEN INTEREST
-            </div>
-            <div style={{ fontSize: 29, fontWeight: 750, marginTop: 15 }}>
-              {loading && !marketData.length ? "Loading..." : compactMoney(totals.totalOpenInterest)}
-            </div>
-            <div style={{ color: muted, fontSize: 12, marginTop: 9 }}>
-              Estimated USD value of open positions
-            </div>
-          </div>
-
-          <div style={cardStyle}>
-            <div style={{ color: muted, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
-              ACTIVE MARKETS
-            </div>
-            <div style={{ fontSize: 29, fontWeight: 750, marginTop: 15 }}>
-              {loading && !markets.length ? "Loading..." : totals.activeMarkets.toLocaleString("en-US")}
-            </div>
-            <div style={{ color: muted, fontSize: 12, marginTop: 9 }}>
-              {totals.listedMarkets} listed markets
-            </div>
-          </div>
-        </div>
-
-        <section
-          style={{
-            background: "#10120f",
-            border: "1px solid #292d25",
-            borderRadius: 16,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 16,
-              flexWrap: "wrap",
-              padding: 20,
-              borderBottom: "1px solid #292d25",
-            }}
-          >
+        <section style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, flexWrap: "wrap", marginBottom: 26 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <MarketMark name={marketName} />
             <div>
-              <h2 style={{ fontSize: 18, margin: "0 0 7px", fontWeight: 750 }}>
-                All markets
-              </h2>
-              <p style={{ color: muted, fontSize: 12, margin: 0 }}>
-                {rows.length} markets shown · Sorted by {sortBy === "openInterest" ? "open interest" : sortBy === "change" ? "24H change" : sortBy}
+              <div style={{ color: LIME, fontSize: 10, fontWeight: 850, letterSpacing: 1.7, marginBottom: 7 }}>TXFLOW PERPETUAL MARKET</div>
+              <h1 style={{ fontSize: "clamp(30px, 5vw, 46px)", lineHeight: 1.05, letterSpacing: -1.5, margin: 0, fontWeight: 850 }}>{marketName}</h1>
+              <p style={{ color: MUTED, margin: "8px 0 0", fontSize: 13 }}>
+                Perpetual contract{market?.maxLeverage ? ` · Up to ${market.maxLeverage}x leverage` : ""}
+                {market?.haltTrading || market?.delisted ? " · Inactive" : " · Active"}
               </p>
             </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                flexWrap: "wrap",
-              }}
-            >
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  color: muted,
-                  fontSize: 12,
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(event) => setShowInactive(event.target.checked)}
-                  style={{ accentColor: LIME }}
-                />
-                Show inactive
-              </label>
-
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search markets..."
-                aria-label="Search markets"
-                style={{
-                  width: 220,
-                  maxWidth: "100%",
-                  padding: "12px 14px",
-                  border: "1px solid #34392f",
-                  borderRadius: 10,
-                  outline: "none",
-                  background: "#090a08",
-                  color: "#f5f6f2",
-                  fontSize: 13,
-                }}
-              />
-            </div>
           </div>
+          <button type="button" onClick={() => void loadMarket(true)} disabled={refreshing} style={{ background: LIME, color: "#11150b", border: 0, borderRadius: 10, padding: "12px 17px", fontWeight: 850, cursor: refreshing ? "wait" : "pointer", opacity: refreshing ? 0.7 : 1 }}>
+            {refreshing ? "Refreshing…" : "↻ Refresh market"}
+          </button>
+        </section>
 
-          {error && (
-            <div
-              style={{
-                margin: 20,
-                padding: 16,
-                background: "#251615",
-                border: "1px solid #66312d",
-                borderRadius: 10,
-                color: "#ffb7ad",
-                fontSize: 13,
-              }}
-            >
-              {error}
-              <button
-                type="button"
-                onClick={() => void loadMarkets(true)}
-                style={{
-                  marginLeft: 12,
-                  background: "transparent",
-                  border: 0,
-                  color: LIME,
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-              >
-                Try again
-              </button>
-            </div>
-          )}
-
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                minWidth: 1050,
-                borderCollapse: "collapse",
-                fontSize: 13,
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: "1px solid #292d25" }}>
-                  <th
-                    style={{
-                      color: muted,
-                      textAlign: "left",
-                      fontSize: 11,
-                      padding: "0 20px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    MARKET
-                  </th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("price", "LAST PRICE")}</th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("change", "24H CHANGE")}</th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("volume", "24H VOLUME")}</th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("openInterest", "OPEN INTEREST")}</th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("funding", "FUNDING RATE")}</th>
-                  <th style={{ textAlign: "right", padding: "12px 20px", color: muted, fontSize: 11 }}>
-                    24H RANGE
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {loading && !markets.length ? (
-                  <tr>
-                    <td colSpan={7} style={{ padding: 50, textAlign: "center", color: muted }}>
-                      Loading Txflow markets...
-                    </td>
-                  </tr>
-                ) : rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} style={{ padding: 50, textAlign: "center", color: muted }}>
-                      {error ? "Market data could not be loaded." : "No markets match your search."}
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((market) => {
-                    const fundingPercent = market.funding * 100;
-                    const change = market.change;
-
-                    return (
-                      <tr
-                        key={market.name}
-                        style={{ borderBottom: "1px solid #22251f" }}
-                      >
-                        <td style={{ padding: "15px 20px" }}>
-                          <Link
-                            href={`/markets/${encodeURIComponent(market.name)}`}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 12,
-                              textDecoration: "none",
-                              color: "#f5f6f2",
-                            }}
-                          >
-                            <MarketIcon name={market.name} />
-                            <span>
-                              <span style={{ display: "block", fontWeight: 750 }}>
-                                {market.name}
-                              </span>
-                              <span style={{ display: "block", color: muted, fontSize: 11, marginTop: 4 }}>
-                                Perpetual
-                                {market.maxLeverage ? ` · Up to ${market.maxLeverage}x` : ""}
-                              </span>
-                            </span>
-                          </Link>
-                        </td>
-
-                        <td style={{ textAlign: "right", padding: "15px 10px", fontWeight: 650 }}>
-                          {price(market.lastPrice)}
-                        </td>
-
-                        <td
-                          style={{
-                            textAlign: "right",
-                            padding: "15px 10px",
-                            color: change === null ? muted : change >= 0 ? LIME : "#ff8177",
-                          }}
-                        >
-                          {change === null ? "—" : percent(change)}
-                        </td>
-
-                        <td style={{ textAlign: "right", padding: "15px 10px", fontWeight: 650 }}>
-                          {market.data ? compactMoney(market.volume) : "—"}
-                        </td>
-
-                        <td style={{ textAlign: "right", padding: "15px 10px" }}>
-                          {market.data ? compactMoney(market.openInterest) : "—"}
-                        </td>
-
-                        <td
-                          style={{
-                            textAlign: "right",
-                            padding: "15px 10px",
-                            color: fundingPercent > 0 ? LIME : fundingPercent < 0 ? "#ff8177" : muted,
-                          }}
-                        >
-                          {market.data ? percent(fundingPercent, 4) : "—"}
-                        </td>
-
-                        <td style={{ textAlign: "right", padding: "15px 20px" }}>
-                          <span style={{ display: "block", fontSize: 12 }}>
-                            {market.high ? price(market.high) : "—"}
-                          </span>
-                          <span style={{ display: "block", color: muted, fontSize: 11, marginTop: 4 }}>
-                            Low {market.low ? price(market.low) : "—"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+        {error && (
+          <div role="alert" style={{ padding: 16, marginBottom: 20, borderRadius: 12, border: "1px solid #66312d", background: "#251615", color: "#ffb7ad", fontSize: 13 }}>
+            {error}
+            <button type="button" onClick={() => void loadMarket(true)} style={{ marginLeft: 12, background: "transparent", border: 0, color: LIME, cursor: "pointer", fontWeight: 800 }}>Try again</button>
           </div>
+        )}
 
-          <div
-            style={{
-              padding: "16px 20px",
-              borderTop: "1px solid #292d25",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              flexWrap: "wrap",
-              color: muted,
-              fontSize: 11,
-            }}
-          >
-            <span>
-              Values come from the existing Txflow API. Missing values are shown as dashes.
-            </span>
-            <span>
-              {lastUpdated
-                ? `Updated ${lastUpdated.toLocaleTimeString()}`
-                : "Waiting for market data"}
-              {" · "}
-              Refreshes every 30 seconds
-            </span>
+        <section style={{ ...cardStyle, marginBottom: 16, padding: "24px 26px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <div style={labelStyle}>LAST TRADED PRICE</div>
+              <div style={{ fontSize: "clamp(34px, 6vw, 52px)", fontWeight: 850, letterSpacing: -1.8, marginTop: 10 }}>{loading && !context ? "Loading…" : money(stats.last)}</div>
+              <div style={{ marginTop: 9, fontSize: 13, color: stats.change === null ? MUTED : stats.change >= 0 ? LIME : "#ff7777" }}>
+                {signedPercent(stats.change)} <span style={{ color: MUTED }}>24H change</span>
+              </div>
+            </div>
+            <div style={{ color: MUTED, fontSize: 11, textAlign: "right" }}>
+              <div><span style={{ color: "#22c55e" }}>●</span> Txflow market data</div>
+              <div style={{ marginTop: 8 }}>{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Waiting for data"}</div>
+              <div style={{ marginTop: 5 }}>Auto-refreshes every 30 seconds</div>
+            </div>
           </div>
         </section>
+
+        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 205px), 1fr))", gap: 13, marginBottom: 22 }}>
+          <article style={cardStyle}><div style={labelStyle}>24H TRADING VOLUME</div><div style={valueStyle}>{loading && !context ? "Loading…" : money(stats.volume, true)}</div><div style={{ color: MUTED, fontSize: 11, marginTop: 8 }}>Quote volume reported by Txflow</div></article>
+          <article style={cardStyle}><div style={labelStyle}>OPEN INTEREST</div><div style={valueStyle}>{loading && !context ? "Loading…" : money(stats.openInterest, true)}</div><div style={{ color: MUTED, fontSize: 11, marginTop: 8 }}>Estimated USD notional value</div></article>
+          <article style={cardStyle}><div style={labelStyle}>FUNDING RATE</div><div style={{ ...valueStyle, color: stats.funding === null ? "#f2f4ed" : stats.funding >= 0 ? LIME : "#ff7777" }}>{stats.funding === null ? "—" : `${(stats.funding * 100).toFixed(4)}%`}</div><div style={{ color: MUTED, fontSize: 11, marginTop: 8 }}>Current rate from market context</div></article>
+          <article style={cardStyle}><div style={labelStyle}>24H PRICE RANGE</div><div style={{ ...valueStyle, fontSize: 19 }}>{money(stats.low)} – {money(stats.high)}</div><div style={{ color: MUTED, fontSize: 11, marginTop: 8 }}>Reported daily low and high</div></article>
+        </section>
+
+        <section style={{ ...cardStyle, marginBottom: 22 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 17 }}>
+            <div><div style={{ ...labelStyle, color: LIME }}>PRICE ACTION</div><h2 style={{ margin: "7px 0 0", fontSize: 19 }}>Candlestick chart</h2></div>
+            <span style={{ color: MUTED, fontSize: 11, alignSelf: "center" }}>OHLC · Trading volume</span>
+          </div>
+          <PriceChart coin={marketName} />
+        </section>
+
+        <section style={{ ...cardStyle, marginBottom: 22 }}>
+          <h2 style={{ fontSize: 17, margin: "0 0 16px" }}>Market reference prices</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+            <div><div style={labelStyle}>MARK PRICE</div><div style={{ fontSize: 17, fontWeight: 750, marginTop: 8 }}>{money(stats.mark)}</div></div>
+            <div><div style={labelStyle}>ORACLE PRICE</div><div style={{ fontSize: 17, fontWeight: 750, marginTop: 8 }}>{money(stats.oracle)}</div></div>
+            <div><div style={labelStyle}>MAX LEVERAGE</div><div style={{ fontSize: 17, fontWeight: 750, marginTop: 8 }}>{market?.maxLeverage ? `${market.maxLeverage}x` : "—"}</div></div>
+            <div><div style={labelStyle}>MARKET STATUS</div><div style={{ fontSize: 17, fontWeight: 750, marginTop: 8, color: market?.haltTrading || market?.delisted ? "#ff7777" : LIME }}>{market?.haltTrading || market?.delisted ? "Inactive" : market ? "Active" : "—"}</div></div>
+          </div>
+        </section>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", color: MUTED, fontSize: 11 }}>
+          <span>Market metrics are displayed from the existing Txflow API. Open interest is estimated using contracts × mark price.</span>
+          <Link href="/markets" style={{ color: LIME, fontWeight: 800 }}>← Back to all markets</Link>
+        </div>
       </div>
     </main>
   );

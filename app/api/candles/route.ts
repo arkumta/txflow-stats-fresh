@@ -8,6 +8,7 @@ const endTime = Date.now();
 const durations: Record<string, number> = {
   "1h": 24 * 60 * 60 * 1000,
   "4h": 7 * 24 * 60 * 60 * 1000,
+  "12h": 90 * 24 * 60 * 60 * 1000,
   "1d": 30 * 24 * 60 * 60 * 1000,
   "1w": 365 * 24 * 60 * 60 * 1000,
 };
