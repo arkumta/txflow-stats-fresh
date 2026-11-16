@@ -95,7 +95,7 @@ async function loadTrader() {
 
     if (dailyActivity.length === 0) {
       setError(
-        "No trading activity found for this wallet in the last 30 days."
+        "No trading activity found for this wallet in the last 365 days."
       );
       return;
     }
@@ -192,7 +192,7 @@ async function loadTrader() {
 
       try {
         const response = await fetch(
-          `/api/market-breakdown?wallet=${encodeURIComponent(wallet)}&days=30`
+          `/api/market-breakdown?wallet=${encodeURIComponent(wallet)}&days=365`
         );
 
         const data = await response.json();
@@ -298,7 +298,7 @@ async function loadTrader() {
                   </h1>
                   <p>
                     Trading activity and market breakdown for this wallet
-                    over the last 30 days.
+                    over the last 365 days.
                   </p>
                 </div>
 
@@ -334,7 +334,7 @@ async function loadTrader() {
               <article className="metric-card">
                 <div className="metric-top">
                   <span className="metric-icon">⌁</span>
-                  <span className="metric-period">30 DAYS</span>
+                  <span className="metric-period">365 DAYS</span>
                 </div>
                 <p className="metric-label">Total trades</p>
                 <div className="metric-value">
@@ -346,7 +346,7 @@ async function loadTrader() {
               <article className="metric-card metric-highlight">
                 <div className="metric-top">
                   <span className="metric-icon">$</span>
-                  <span className="metric-period">30 DAYS</span>
+                  <span className="metric-period">365 DAYS</span>
                 </div>
                 <p className="metric-label">Trading volume</p>
                 <div className="metric-value lime-value">
@@ -373,7 +373,7 @@ async function loadTrader() {
             <div className="data-note">
               <span className="note-mark">i</span>
               <span>
-                Statistics cover the last 30 days. Volume is calculated from
+                Statistics cover the last 365 days. Volume is calculated from
                 recorded price × size values.
               </span>
             </div>
@@ -385,7 +385,7 @@ async function loadTrader() {
                   <h2>Trading activity</h2>
                   <p>Daily trade count and calculated trading volume</p>
                 </div>
-                <span className="section-tag">LAST 30 DAYS</span>
+                <span className="section-tag">LAST 365 DAYS</span>
               </div>
 
               <div className="content-card chart-card">
@@ -410,7 +410,7 @@ async function loadTrader() {
                     Markets traded by this wallet, ranked by calculated volume
                   </p>
                 </div>
-                <span className="section-tag">30-DAY WINDOW</span>
+                <span className="section-tag">365-DAY WINDOW</span>
               </div>
 
               <div className="content-card table-card">

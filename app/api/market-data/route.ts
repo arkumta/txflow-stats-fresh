@@ -1,23 +1,50 @@
+const TXFLOW_INFO_URL = "https://rpc.txflow-testnet.xyz/info";
+const CONCURRENCY = 4;
+const BATCH_PAUSE_MS = 150;
+const REQUEST_TIMEOUT_MS = 12_000;
+
+type MarketMeta = {
+  name: string;
+  haltTrading?: boolean;
+  delisted?: boolean;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchMarketContext(coin: string) {
+  const response = await fetch(TXFLOW_INFO_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "activeAssetCtx", coin }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Txflow returned ${response.status} for ${coin}`);
+  }
+
+  const data = await response.json();
+
+  if (data?.message) {
+    throw new Error(`${coin}: ${data.message}`);
+  }
+
+  return data;
+}
 
 export async function GET() {
   try {
-    const metaResponse = await fetch(
-      "https://rpc.txflow-testnet.xyz/info",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: "perpMeta",
-        }),
-        cache: "no-store",
-      }
-    );
+    const metaResponse = await fetch(TXFLOW_INFO_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "perpMeta" }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
 
     if (!metaResponse.ok) {
-      console.error("Txflow metadata error:", metaResponse.status);
-
+      console.error("Txflow market metadata error:", metaResponse.status);
       return Response.json(
         { success: false, error: "Txflow market data is temporarily unavailable." },
         { status: 502 }
@@ -26,70 +53,58 @@ export async function GET() {
 
     const metaData = await metaResponse.json();
 
-    if (!Array.isArray(metaData.universe)) {
+    if (!Array.isArray(metaData?.universe)) {
       console.error("Unexpected Txflow metadata response:", metaData);
-
       return Response.json(
         { success: false, error: "Unexpected response from Txflow." },
         { status: 502 }
       );
     }
 
-    const activeMarkets = metaData.universe.filter(
-      (market: any) => !market.haltTrading && !market.delisted
+    const activeMarkets = (metaData.universe as MarketMeta[]).filter(
+      (market) => market?.name && !market.haltTrading && !market.delisted
     );
 
-    const results: any[] = [];
+    const results: unknown[] = [];
+    let failed = 0;
 
-    for (const market of activeMarkets) {
-      try {
-        const response = await fetch(
-          "https://rpc.txflow-testnet.xyz/info",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              type: "activeAssetCtx",
-              coin: market.name,
-            }),
-            cache: "no-store",
-          }
-        );
+    // Fetch a small group concurrently instead of waiting 500ms after every
+    // market. With 72 markets, the old serial loop imposed at least 36 seconds
+    // of artificial delay on every page load/refresh.
+    for (let i = 0; i < activeMarkets.length; i += CONCURRENCY) {
+      const batch = activeMarkets.slice(i, i + CONCURRENCY);
+      const settled = await Promise.allSettled(
+        batch.map((market) => fetchMarketContext(market.name))
+      );
 
-        if (!response.ok) {
-          console.error(
-            `Failed to fetch ${market.name}: ${response.status}`
-          );
-
-          if (response.status === 429) {
-            console.error("Txflow rate limit reached. Stopping market requests.");
-            break;
-          }
-
-          continue;
-        }
-
-        const data = await response.json();
-
-        if (!data.message) {
-          results.push(data);
+      for (let j = 0; j < settled.length; j += 1) {
+        const item = settled[j];
+        if (item.status === "fulfilled") {
+          results.push(item.value);
         } else {
-          console.error(`${market.name}: ${data.message}`);
+          failed += 1;
+          console.error(
+            `Failed to fetch market ${batch[j].name}:`,
+            item.reason instanceof Error ? item.reason.message : item.reason
+          );
         }
+      }
 
-        // Wait longer between requests to reduce rate limiting.
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      } catch (error) {
-        console.error(`Error fetching ${market.name}:`, error);
+      if (i + CONCURRENCY < activeMarkets.length) {
+        await sleep(BATCH_PAUSE_MS);
       }
     }
 
-    return Response.json(results);
+    return Response.json(results, {
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Txflow-Markets-Requested": String(activeMarkets.length),
+        "X-Txflow-Markets-Returned": String(results.length),
+        "X-Txflow-Markets-Failed": String(failed),
+      },
+    });
   } catch (error) {
     console.error("Market-data API failed:", error);
-
     return Response.json(
       { success: false, error: "Unable to load market data." },
       { status: 500 }

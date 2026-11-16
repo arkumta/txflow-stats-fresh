@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
 const { data, error } = await supabase.rpc("get_trader_daily_activity", {
   target_wallet: wallet,
-  period_days: 30,
+  period_days: 365,
 });
 
   if (error) {
