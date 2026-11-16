@@ -13,6 +13,8 @@ type Trader = {
   lastActive: string;
 };
 
+type Period = "24H" | "7D" | "SINCE_OCT_10";
+
 type SortOption =
   | "netPnl"
   | "grossPnl"
@@ -45,7 +47,7 @@ function formatDate(value: string) {
 }
 
 export default function PnlLeaderboard() {
-  const [period, setPeriod] = useState("24H");
+  const [period, setPeriod] = useState<Period>("SINCE_OCT_10");
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,6 +63,7 @@ export default function PnlLeaderboard() {
     async function load() {
       setLoading(true);
       setError("");
+      setTraders([]);
 
       try {
         const response = await fetch(
@@ -139,6 +142,18 @@ export default function PnlLeaderboard() {
     });
   }, [traders, walletSearch, sortBy]);
 
+  const latestActivity = useMemo(() => {
+    const timestamps = traders
+      .map((trader) => new Date(trader.lastActive).getTime())
+      .filter((timestamp) => Number.isFinite(timestamp));
+
+    if (timestamps.length === 0) {
+      return null;
+    }
+
+    return new Date(Math.max(...timestamps)).toISOString();
+  }, [traders]);
+
   async function copyWallet(wallet: string) {
     setCopyError("");
     setCopiedWallet("");
@@ -214,15 +229,68 @@ export default function PnlLeaderboard() {
 
         <select
           value={period}
-          onChange={(event) => setPeriod(event.target.value)}
+          onChange={(event) =>
+            setPeriod(event.target.value as Period)
+          }
           aria-label="PnL leaderboard period"
           style={controlStyle}
         >
           <option value="24H">Last 24 hours</option>
           <option value="7D">Last 7 days</option>
-          <option value="SINCE_OCT_10">Since Oct 10</option>
+          <option value="SINCE_OCT_10">
+            Historical (Since Oct 10)
+          </option>
         </select>
       </div>
+
+      {!loading && !error && period === "SINCE_OCT_10" && traders.length > 0 && (
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "16px",
+            border: "1px solid #66501e",
+            background: "#211b0d",
+            borderRadius: "8px",
+          }}
+        >
+          <div
+            style={{
+              color: "#facc15",
+              fontSize: "13px",
+              fontWeight: 600,
+              marginBottom: "7px",
+            }}
+          >
+            Historical rankings
+          </div>
+
+          <p
+            style={{
+              color: "#c5b98e",
+              fontSize: "13px",
+              lineHeight: 1.6,
+              margin: 0,
+            }}
+          >
+            These rankings use previously indexed trading activity
+            since October 10, 2026. They are historical results,
+            not live market rankings.
+          </p>
+
+          {latestActivity && (
+            <p
+              style={{
+                color: "#aaa17f",
+                fontSize: "12px",
+                margin: "10px 0 0",
+              }}
+            >
+              Latest activity among returned traders:{" "}
+              <strong>{formatDate(latestActivity)}</strong>
+            </p>
+          )}
+        </div>
+      )}
 
       <div
         style={{
@@ -285,11 +353,74 @@ export default function PnlLeaderboard() {
           </button>
         </div>
       ) : displayedTraders.length === 0 ? (
-        <p style={{ color: "#999" }}>
-          {walletSearch.trim()
-            ? "No loaded traders match that wallet address."
-            : "No trader activity found for this period."}
-        </p>
+        <div
+          style={{
+            padding: "24px",
+            border: "1px solid #292929",
+            borderRadius: "8px",
+            background: "#111",
+          }}
+        >
+          <h3 style={{ margin: "0 0 10px", fontSize: "16px" }}>
+            {walletSearch.trim()
+              ? "No matching traders"
+              : "No indexed trading activity"}
+          </h3>
+
+          <p
+            style={{
+              color: "#999",
+              fontSize: "13px",
+              lineHeight: 1.6,
+              margin: "0 0 16px",
+            }}
+          >
+            {walletSearch.trim()
+              ? "No loaded traders match that wallet address. Try another address or clear your search."
+              : period === "24H"
+                ? "No fills are currently recorded for the last 24 hours. Historical rankings are available from October 10."
+                : period === "7D"
+                  ? "No fills are currently recorded for the last 7 days. Historical rankings are available from October 10."
+                  : "No historical trader activity was returned for this period."}
+          </p>
+
+          {walletSearch.trim() ? (
+            <button
+              onClick={() => setWalletSearch("")}
+              style={{
+                ...controlStyle,
+                cursor: "pointer",
+              }}
+            >
+              Clear wallet search
+            </button>
+          ) : period !== "SINCE_OCT_10" ? (
+            <button
+              onClick={() => {
+                setWalletSearch("");
+                setPeriod("SINCE_OCT_10");
+              }}
+              style={{
+                ...controlStyle,
+                cursor: "pointer",
+                border: "1px solid #a3e635",
+                color: "#a3e635",
+              }}
+            >
+              View historical rankings
+            </button>
+          ) : (
+            <button
+              onClick={() => setReloadKey((key) => key + 1)}
+              style={{
+                ...controlStyle,
+                cursor: "pointer",
+              }}
+            >
+              Retry loading rankings
+            </button>
+          )}
+        </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table
@@ -414,12 +545,40 @@ export default function PnlLeaderboard() {
         </p>
       )}
 
-      <p style={{ color: "#777", fontSize: "12px", marginTop: "18px" }}>
-        Rankings use stored fills and may be incomplete if historical data
-        has not been fully ingested. Wallet search filters the 100 traders
-        loaded for the selected period; it does not search every wallet in
-        the database.
-      </p>
+      <div
+        style={{
+          borderTop: "1px solid #222",
+          marginTop: "20px",
+          paddingTop: "15px",
+        }}
+      >
+        <p
+          style={{
+            color: "#777",
+            fontSize: "12px",
+            lineHeight: 1.7,
+            margin: 0,
+          }}
+        >
+          Rankings use stored fills and may be incomplete if historical
+          data has not been fully ingested. Wallet search filters the
+          100 traders loaded for the selected period; it does not search
+          every wallet in the database.
+        </p>
+
+        <p
+          style={{
+            color: "#777",
+            fontSize: "12px",
+            lineHeight: 1.7,
+            margin: "8px 0 0",
+          }}
+        >
+          Fees reflect recorded database values. A zero fee value should
+          not automatically be interpreted as proof that no trading fees
+          were charged.
+        </p>
+      </div>
     </section>
   );
 }

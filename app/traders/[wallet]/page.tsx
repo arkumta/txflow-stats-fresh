@@ -4,6 +4,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import ActivityChart from "./ActivityChart";
+import TraderPerformanceCalendar from "./TraderPerformanceCalendar";
+import TraderPerformance from "./TraderPerformance";
+import TraderMarketPerformance from "./TraderMarketPerformance";
+import TraderBehavior from "./TraderBehavior";
+import TraderSessionAnalysis from "./TraderSessionAnalysis";
 
 type TraderStats = {
   wallet: string;
@@ -328,6 +333,25 @@ async function loadTrader() {
                   {copied ? "Copied" : "Copy address"}
                 </button>
               </div>
+
+              <div style={{ marginTop: "16px" }}>
+  <a
+    href={`/trader-comparison?wallet=${encodeURIComponent(wallet)}`}
+    style={{
+      display: "inline-flex",
+      padding: "11px 15px",
+      border: "1px solid rgba(184,243,74,.35)",
+      borderRadius: "8px",
+      background: "rgba(184,243,74,.08)",
+      color: "#b8f34a",
+      textDecoration: "none",
+      fontSize: "12px",
+      fontWeight: 700,
+    }}
+  >
+    Compare with other traders →
+  </a>
+</div>
             </header>
 
             <section className="metrics-grid">
@@ -400,6 +424,77 @@ async function loadTrader() {
                 )}
               </div>
             </section>
+<section className="content-section">
+  <div className="content-card chart-card">
+    {activityLoading ? (
+      <LoadingMessage text="Loading performance calendar…" />
+    ) : activityError ? (
+      <ErrorMessage text={activityError} />
+    ) : (
+      <TraderPerformanceCalendar data={activity} />
+    )}
+  </div>
+</section>
+<section className="content-section">
+  <div className="section-heading">
+    <div>
+      <div className="section-kicker">TRADER PERFORMANCE</div>
+      <h2>Win / Loss Breakdown</h2>
+      <p>Daily realized PnL, profitable days and trading results</p>
+    </div>
+    <span className="section-tag">365-DAY WINDOW</span>
+  </div>
+
+  <div className="content-card">
+    <TraderPerformance wallet={wallet} />
+  </div>
+</section>
+
+<section className="content-section">
+  <div className="section-heading">
+    <div>
+      <div className="section-kicker">MARKET ANALYTICS</div>
+      <h2>PnL by Market</h2>
+      <p>Understand which markets contribute to trading performance</p>
+    </div>
+    <span className="section-tag">MARKET BREAKDOWN</span>
+  </div>
+
+  <div className="content-card">
+    <TraderMarketPerformance wallet={wallet} />
+  </div>
+</section>
+
+<section className="content-section">
+  <div className="section-heading">
+    <div>
+      <div className="section-kicker">TRADING INSIGHTS</div>
+      <h2>Trading Behavior</h2>
+      <p>Understand this trader's trading habits and activity patterns</p>
+    </div>
+    <span className="section-tag">BEHAVIOR ANALYSIS</span>
+  </div>
+
+  <div className="content-card">
+    <TraderBehavior wallet={wallet} />
+  </div>
+</section>
+
+<section className="content-section">
+  <div className="section-heading">
+    <div>
+      <div className="section-kicker">TRADING INSIGHTS</div>
+      <h2>Trading Session Analysis</h2>
+      <p>Compare trading activity across Asian, European and US sessions</p>
+    </div>
+    <span className="section-tag">SESSION ANALYSIS</span>
+  </div>
+
+  <div className="content-card chart-card">
+    <TraderSessionAnalysis wallet={wallet} />
+  </div>
+</section>
+
 
             <section className="content-section">
               <div className="section-heading">
