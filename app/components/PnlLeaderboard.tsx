@@ -576,7 +576,7 @@ export default function PnlLeaderboard() {
                     {trader.tradingVolume == null ? "—" : formatMoney(trader.tradingVolume)}
                   </td>
 
-                  <td style={{ ...cellStyle, color: trader.averageNetPnlPerFill == null ? "#999" : trader.averageNetPnlPerFill >= 0 ? "#4ade80" : "#f87171 }}>
+                  <td style={{ ...cellStyle, color: trader.averageNetPnlPerFill == null ? "#999" : trader.averageNetPnlPerFill >= 0 ? "#4ade80" : "#f87171" }}>
                     {trader.averageNetPnlPerFill == null ? "—" : formatMoney(trader.averageNetPnlPerFill)}
                   </td>
 
