@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Position = { wallet: string; coin: string; size: number; direction: string; entryPrice: number; markPrice: number; positionValue: number; unrealizedPnl: number };
 type Fill = { id: string; wallet: string; coin: string; direction: string; side: string; size: number; price: number; closedPnl: number; time: number };
@@ -25,6 +25,7 @@ export default function PositionsPage() {
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [walletInput, setWalletInput] = useState("");
   const [snapshots, setSnapshots] = useState<TraderSnapshot[]>([]);
+  const snapshotsRef = useRef<TraderSnapshot[]>([]);
   const [previous, setPrevious] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -50,11 +51,11 @@ export default function PositionsPage() {
   }, []);
 
   const refresh = useCallback(async () => {
-    if (watchlist.length === 0) { setSnapshots([]); setLastUpdated(new Date().toISOString()); return; }
+    if (watchlist.length === 0) { snapshotsRef.current = []; setSnapshots([]); setLastUpdated(new Date().toISOString()); return; }
     setLoading(true);
     setError("");
     const oldValues: Record<string, number> = {};
-    snapshots.forEach(s => s.positions.forEach(p => { oldValues[`${s.wallet}:${p.coin}`] = p.positionValue; }));
+    snapshotsRef.current.forEach(s => s.positions.forEach(p => { oldValues[`${s.wallet}:${p.coin}`] = p.positionValue; }));
     const results: TraderSnapshot[] = [];
     let cursor = 0;
     const workers = Array.from({ length: Math.min(3, watchlist.length) }, async () => {
@@ -78,11 +79,12 @@ export default function PositionsPage() {
     await Promise.all(workers);
     const ordered = watchlist.map(w => results.find(r => r.wallet === w)).filter((x): x is TraderSnapshot => Boolean(x));
     setPrevious(oldValues);
+    snapshotsRef.current = ordered;
     setSnapshots(ordered);
     setLastUpdated(new Date().toISOString());
     setLoading(false);
     if (ordered.every(x => x.error)) setError("Could not load any watched traders. Please retry in a moment.");
-  }, [watchlist, snapshots]);
+  }, [watchlist]);
 
   useEffect(() => {
     if (!loaded) return;
