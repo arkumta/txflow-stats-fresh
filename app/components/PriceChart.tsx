@@ -92,17 +92,17 @@ export default function PriceChart({ coin }: { coin: string }) {
 
     const chart = createChart(container, {
       layout: {
-        background: { color: "#0d0d0d" },
-        textColor: "#777",
+        background: { color: "#10150e" },
+        textColor: "#929b88",
       },
       grid: {
-        vertLines: { color: "#151515" },
-        horzLines: { color: "#151515" },
+        vertLines: { color: "#20271a" },
+        horzLines: { color: "#20271a" },
       },
       width: container.clientWidth,
       height: 500,
       timeScale: {
-        borderColor: "#222",
+        borderColor: "#35422a",
       },
       rightPriceScale: {
         borderColor: "#222",
@@ -110,10 +110,10 @@ export default function PriceChart({ coin }: { coin: string }) {
     });
 
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#22c55e",
+      upColor: "#c5f66b",
       downColor: "#ef4444",
       borderVisible: false,
-      wickUpColor: "#22c55e",
+      wickUpColor: "#c5f66b",
       wickDownColor: "#ef4444",
     });
 
@@ -172,18 +172,19 @@ export default function PriceChart({ coin }: { coin: string }) {
 
   return (
     <div
+      className="price-chart-card"
       style={{
         marginTop: "40px",
-        background: "#0d0d0d",
-        border: "1px solid #222",
-        borderRadius: "8px",
+        background: "#10150e",
+        border: "1px solid rgba(151,177,112,.18)",
+        borderRadius: "14px",
         padding: "24px",
       }}
     >
       <div style={{ marginBottom: "20px" }}>
         <p
           style={{
-            color: "#666",
+            color: "#929b88",
             fontSize: "12px",
             letterSpacing: "1px",
             margin: 0,
@@ -195,7 +196,7 @@ export default function PriceChart({ coin }: { coin: string }) {
         <h2
           style={{
             fontSize: "22px",
-            fontWeight: "500",
+            fontWeight: "700",
             margin: "8px 0 0",
           }}
         >
@@ -216,11 +217,11 @@ export default function PriceChart({ coin }: { coin: string }) {
               onClick={() => setSelectedInterval(value)}
               style={{
                 background:
-                  selectedInterval === value ? "#fff" : "#111",
+                  selectedInterval === value ? "#c5f66b" : "#151b11",
                 color:
-                  selectedInterval === value ? "#000" : "#777",
-                border: "1px solid #333",
-                borderRadius: "5px",
+                  selectedInterval === value ? "#11160c" : "#a9b995",
+                border: "1px solid #35422a",
+                borderRadius: "8px",
                 padding: "6px 12px",
                 cursor: "pointer",
               }}
@@ -234,15 +235,16 @@ export default function PriceChart({ coin }: { coin: string }) {
       {loading ? (
         <p style={{ color: "#666" }}>Loading chart...</p>
       ) : candles.length === 0 ? (
-        <p style={{ color: "#888" }}>
+        <p style={{ color: "#929b88" }}>
           No candle data available for this timeframe. Please try again later.
         </p>
       ) : (
         <div
           ref={chartContainerRef}
+          className="price-chart-canvas"
           style={{
             width: "100%",
-            height: "500px",
+            height: "440px",
           }}
         />
       )}
