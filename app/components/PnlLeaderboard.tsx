@@ -11,6 +11,8 @@ type Trader = {
   tradeCount: number;
   fillsWithFee: number;
   lastActive: string;
+  tradingVolume: number | null;
+  averageNetPnlPerFill: number | null;
 };
 
 type Period = "24H" | "7D" | "SINCE_OCT_10";
@@ -20,7 +22,9 @@ type SortOption =
   | "grossPnl"
   | "fees"
   | "fills"
-  | "lastActive";
+  | "lastActive"
+  | "volume"
+  | "averagePnl";
 
 function formatMoney(value: number) {
   const amount = Number(value) || 0;
@@ -53,6 +57,8 @@ export default function PnlLeaderboard() {
   const [error, setError] = useState("");
   const [walletSearch, setWalletSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("netPnl");
+  const [performanceFilter, setPerformanceFilter] = useState<"all" | "profitable" | "losing">("all");
+  const [minFills, setMinFills] = useState(0);
   const [copiedWallet, setCopiedWallet] = useState("");
   const [copyError, setCopyError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -114,9 +120,13 @@ export default function PnlLeaderboard() {
   const displayedTraders = useMemo(() => {
     const query = walletSearch.trim().toLowerCase();
 
-    const filtered = traders.filter((trader) =>
-      trader.wallet.toLowerCase().includes(query)
-    );
+    const filtered = traders.filter((trader) => {
+      const matchesWallet = trader.wallet.toLowerCase().includes(query);
+      const matchesPerformance = performanceFilter === "all"
+        || (performanceFilter === "profitable" && trader.netRealizedPnl > 0)
+        || (performanceFilter === "losing" && trader.netRealizedPnl < 0);
+      return matchesWallet && matchesPerformance && trader.tradeCount >= minFills;
+    });
 
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
@@ -135,12 +145,18 @@ export default function PnlLeaderboard() {
             new Date(a.lastActive).getTime()
           );
 
+        case "volume":
+          return (b.tradingVolume ?? -1) - (a.tradingVolume ?? -1);
+
+        case "averagePnl":
+          return (b.averageNetPnlPerFill ?? -Infinity) - (a.averageNetPnlPerFill ?? -Infinity);
+
         case "netPnl":
         default:
           return b.netRealizedPnl - a.netRealizedPnl;
       }
     });
-  }, [traders, walletSearch, sortBy]);
+  }, [traders, walletSearch, sortBy, performanceFilter, minFills]);
 
   const latestActivity = useMemo(() => {
     const timestamps = traders
@@ -327,6 +343,31 @@ export default function PnlLeaderboard() {
           <option value="fees">Lowest fees</option>
           <option value="fills">Most fills</option>
           <option value="lastActive">Recently active</option>
+          <option value="volume">Highest trading volume</option>
+          <option value="averagePnl">Highest average PnL / fill</option>
+        </select>
+
+        <select
+          value={performanceFilter}
+          onChange={(event) => setPerformanceFilter(event.target.value as "all" | "profitable" | "losing")}
+          aria-label="Filter traders by performance"
+          style={controlStyle}
+        >
+          <option value="all">All traders</option>
+          <option value="profitable">Profitable traders</option>
+          <option value="losing">Losing traders</option>
+        </select>
+
+        <select
+          value={minFills}
+          onChange={(event) => setMinFills(Number(event.target.value))}
+          aria-label="Minimum number of fills"
+          style={controlStyle}
+        >
+          <option value={0}>Any number of fills</option>
+          <option value={10}>At least 10 fills</option>
+          <option value={50}>At least 50 fills</option>
+          <option value={100}>At least 100 fills</option>
         </select>
       </div>
 
@@ -428,7 +469,7 @@ export default function PnlLeaderboard() {
               width: "100%",
               borderCollapse: "collapse",
               textAlign: "left",
-              minWidth: "900px",
+              minWidth: "1120px",
             }}
           >
             <thead>
@@ -440,6 +481,8 @@ export default function PnlLeaderboard() {
                   "GROSS PNL",
                   "FEES",
                   "FILLS",
+                  "VOLUME",
+                  "AVG. NET PNL / FILL",
                   "LAST ACTIVE",
                 ].map((heading) => (
                   <th
@@ -529,6 +572,14 @@ export default function PnlLeaderboard() {
                     {Number(trader.tradeCount || 0).toLocaleString("en-US")}
                   </td>
 
+                  <td style={cellStyle}>
+                    {trader.tradingVolume == null ? "—" : formatMoney(trader.tradingVolume)}
+                  </td>
+
+                  <td style={{ ...cellStyle, color: trader.averageNetPnlPerFill == null ? "#999" : trader.averageNetPnlPerFill >= 0 ? "#4ade80" : "#f87171 }}>
+                    {trader.averageNetPnlPerFill == null ? "—" : formatMoney(trader.averageNetPnlPerFill)}
+                  </td>
+
                   <td style={{ ...cellStyle, color: "#999" }}>
                     {formatDate(trader.lastActive)}
                   </td>
@@ -576,7 +627,8 @@ export default function PnlLeaderboard() {
         >
           Fees reflect recorded database values. A zero fee value should
           not automatically be interpreted as proof that no trading fees
-          were charged.
+          were charged. Trading volume is shown for 24H and 7D only.
+          Average net PnL per fill is net realized PnL divided by recorded fills; it is not a win rate.
         </p>
       </div>
     </section>
