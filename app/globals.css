@@ -2786,3 +2786,125 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
   .comparison-page .leader-panel { padding: 18px !important; }
   .comparison-page .comparison-footer { flex-wrap: wrap; }
 }
+
+
+/* Navigation final pass — compact tablet/mobile menu and lime theme consistency */
+.txflow-header {
+  border-bottom-color: rgba(197,246,107,.14) !important;
+  background: rgba(9,11,8,.92) !important;
+}
+.txflow-navbar { gap: 16px !important; }
+.txflow-brand-subtitle { color: #77816d !important; }
+.txflow-nav-link { color: #a4ad99 !important; }
+.txflow-nav-link:hover {
+  color: #f2f4ed !important;
+  background: rgba(197,246,107,.055) !important;
+}
+.txflow-nav-link-active {
+  color: #d8f7a1 !important;
+  border-color: rgba(197,246,107,.24) !important;
+  background: rgba(197,246,107,.09) !important;
+}
+.txflow-wallet-search {
+  border-color: #35422a !important;
+  background: #10140e !important;
+}
+.txflow-wallet-search input {
+  color: #edf2e6 !important;
+}
+.txflow-wallet-search input::placeholder { color: #77816d; }
+.txflow-wallet-search button {
+  background: #20291a !important;
+  color: #d0f28d !important;
+}
+.txflow-join-button {
+  border-color: #c5f66b !important;
+  background: #c5f66b !important;
+  color: #11160c !important;
+  box-shadow: 0 5px 18px rgba(197,246,107,.10) !important;
+}
+.txflow-join-button:hover { background: #dcff9b !important; }
+.txflow-mobile-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #35422a !important;
+  border-radius: 9px;
+  background: #151b11 !important;
+  color: #edf2e6;
+}
+.txflow-mobile-toggle span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: #c5f66b;
+}
+.txflow-search-error {
+  padding: 8px 10px !important;
+  border: 1px solid #583537 !important;
+  border-radius: 8px !important;
+  background: #211516 !important;
+  color: #ff9b9b !important;
+  font-size: 11px;
+  line-height: 1.45;
+}
+@media (max-width: 1180px) {
+  .txflow-navbar {
+    min-height: 68px;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+  .txflow-mobile-toggle { display: flex !important; margin-left: auto; }
+  .txflow-nav-content {
+    display: none !important;
+    width: 100%;
+    flex: 0 0 100% !important;
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 13px !important;
+    padding: 13px 0 8px;
+    border-top: 1px solid rgba(151,177,112,.14);
+  }
+  .txflow-nav-content.txflow-nav-content-open { display: flex !important; }
+  .txflow-nav-links {
+    width: 100%;
+    flex-wrap: wrap !important;
+    gap: 5px !important;
+  }
+  .txflow-nav-link {
+    min-height: 36px;
+    padding: 0 11px !important;
+  }
+  .txflow-nav-actions {
+    width: 100%;
+    align-items: stretch !important;
+    flex-wrap: wrap !important;
+  }
+  .txflow-wallet-search {
+    flex: 1 1 280px;
+    min-width: 0;
+  }
+  .txflow-wallet-search input {
+    width: 100% !important;
+    flex: 1 1 auto;
+  }
+  .txflow-join-button { flex: 0 0 auto; }
+}
+@media (max-width: 560px) {
+  .txflow-header { padding-inline: 14px !important; }
+  .txflow-navbar { min-height: 64px; padding: 10px 0 !important; }
+  .txflow-brand-mark { width: 35px; height: 35px; }
+  .txflow-brand-subtitle { font-size: 7px; }
+  .txflow-nav-links { display: grid !important; grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .txflow-nav-link { justify-content: flex-start !important; }
+  .txflow-nav-actions { flex-direction: column !important; }
+  .txflow-wallet-search { width: 100%; flex: 1 1 auto; }
+  .txflow-wallet-search input { min-width: 0; }
+  .txflow-join-button { width: 100%; min-height: 40px; }
+}
