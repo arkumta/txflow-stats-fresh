@@ -1793,3 +1793,77 @@ main:not(.home-page) input,main:not(.home-page) select,main:not(.home-page) text
 main:not(.home-page) tbody tr:hover { background:rgba(197,246,107,.035) !important; }
 button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible { outline-color:#c5f66b; }
 
+/* Subtle trading-terminal atmosphere: grid, ambient glow and data-line accents */
+body {
+  background:
+    radial-gradient(ellipse at 12% 8%, rgba(197,246,107,.075), transparent 32rem),
+    radial-gradient(ellipse at 88% 34%, rgba(120,150,72,.045), transparent 30rem),
+    linear-gradient(180deg,#090b08 0%,#0b0e09 52%,#090b08 100%) !important;
+}
+
+main.home-page {
+  position: relative;
+  isolation: isolate;
+}
+
+main.home-page::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(197,246,107,.025) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(197,246,107,.025) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(to bottom,rgba(0,0,0,.8),transparent 82%);
+}
+
+main.home-page::after {
+  position: absolute;
+  z-index: -1;
+  top: 90px;
+  right: -5%;
+  width: min(46vw,620px);
+  height: 300px;
+  content: "";
+  pointer-events: none;
+  opacity: .45;
+  background:
+    radial-gradient(ellipse at center,rgba(197,246,107,.075),transparent 68%),
+    repeating-linear-gradient(135deg,transparent 0 26px,rgba(197,246,107,.025) 27px 28px,transparent 29px 54px);
+  mask-image: radial-gradient(ellipse at center,#000 0%,transparent 72%);
+}
+
+.home-shell {
+  position: relative;
+}
+
+.home-price-card {
+  box-shadow: 0 0 0 1px rgba(197,246,107,.025), 0 18px 48px rgba(0,0,0,.18) !important;
+}
+
+.home-section-heading {
+  position: relative;
+}
+
+.home-section-heading::before {
+  display: block;
+  width: 3px;
+  height: 27px;
+  flex: 0 0 3px;
+  margin-right: 10px;
+  border-radius: 4px;
+  background: linear-gradient(180deg,#c5f66b,rgba(197,246,107,.12));
+  content: "";
+}
+
+.home-section-heading > div {
+  flex: 1;
+}
+
+@media (max-width:640px) {
+  main.home-page::before { background-size:42px 42px; }
+  main.home-page::after { top:120px; right:-35%; width:90vw; opacity:.28; }
+}
+
