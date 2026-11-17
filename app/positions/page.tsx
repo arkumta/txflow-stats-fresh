@@ -167,7 +167,7 @@ export default function PositionsPage() {
   const inputStyle: React.CSSProperties = { minWidth: 0, background: "#080a08", color: "#f3f7f1", border: "1px solid #344033", borderRadius: 8, padding: 11 };
 
   return (
-    <main style={{ minHeight: "70vh", maxWidth: 1320, margin: "0 auto", padding: "34px 22px 70px", color: "#f3f7f1" }}>
+    <main className="positions-dashboard-page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16, marginBottom: 25 }}>
         <div><div style={{ color: lime, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>TXFLOW / TRADER INTELLIGENCE</div><h1 style={{ fontSize: 34, margin: "9px 0" }}>Watchlist monitor</h1><p style={muted}>Track live exposure, unrealized PnL and recent fills across your saved traders.</p></div>
         <button onClick={refresh} disabled={loading || !loaded} style={{ background: "#1a2410", border: "1px solid #526d2b", color: lime, borderRadius: 8, padding: "10px 15px", fontWeight: 750, cursor: "pointer" }}>{loading ? "Refreshing…" : "↻ Refresh now"}</button>
