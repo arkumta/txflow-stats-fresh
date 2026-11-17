@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import PriceChart from "../../components/PriceChart";
 import VolumeChart from "../../components/VolumeChart";
@@ -97,19 +97,26 @@ function MarketDetailContent() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const requestInFlight = useRef(false);
+  const requestVersion = useRef(0);
+  const activeController = useRef<AbortController | null>(null);
+  const hasSuccessfulLoad = useRef(false);
 
-  const loadMarket = useCallback(async (manual = false) => {
-    if (!marketName) return;
+  const loadMarket = useCallback(async (_manual = false) => {
+    if (!marketName || requestInFlight.current) return;
 
-    if (manual) setRefreshing(true);
-    setError("");
+    requestInFlight.current = true;
+    const currentRequest = ++requestVersion.current;
+    const controller = new AbortController();
+    activeController.current = controller;
+    if (hasSuccessfulLoad.current) setRefreshing(true);
 
     try {
       const [metaResponse, contextResponse] = await Promise.all([
-        fetch("/api/market-list", { cache: "no-store" }),
+        fetch("/api/market-list", { cache: "no-store", signal: controller.signal }),
         fetch(
           `/api/markets?coin=${encodeURIComponent(marketName)}`,
-          { cache: "no-store" }
+          { cache: "no-store", signal: controller.signal }
         ),
       ]);
 
@@ -130,36 +137,56 @@ function MarketDetailContent() {
         metaResult.find((item: MarketMeta) => item.name === marketName) ?? null;
 
       if (!foundMarket) {
-        setMarket(null);
-        setContext(null);
         throw new Error(
           `${marketName} was not found in the current Txflow market list.`
         );
       }
 
-      setMarket(foundMarket);
-      setContext(contextResult);
-      setLastUpdated(new Date());
+      if (currentRequest === requestVersion.current) {
+        setMarket(foundMarket);
+        setContext(contextResult);
+        setLastUpdated(new Date());
+        hasSuccessfulLoad.current = true;
+        setError("");
+      }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to load this market."
-      );
+      if (currentRequest === requestVersion.current && !controller.signal.aborted) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load this market."
+        );
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (currentRequest === requestVersion.current) {
+        requestInFlight.current = false;
+        activeController.current = null;
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [marketName]);
 
   useEffect(() => {
+    hasSuccessfulLoad.current = false;
+    setMarket(null);
+    setContext(null);
+    setLastUpdated(null);
+    setLoading(true);
+    setError("");
     void loadMarket();
 
     const timer = window.setInterval(() => {
       void loadMarket();
     }, 30000);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      requestVersion.current += 1;
+      activeController.current?.abort();
+      activeController.current = null;
+      requestInFlight.current = false;
+    };
   }, [loadMarket]);
 
   const stats = useMemo(() => {
@@ -339,7 +366,7 @@ function MarketDetailContent() {
               fontSize: 13,
             }}
           >
-            {error}
+            {lastUpdated ? "Refresh failed; showing the last successful market data. " : ""}{error}
             <button
               type="button"
               onClick={() => void loadMarket(true)}
@@ -403,7 +430,7 @@ function MarketDetailContent() {
             <div style={{ color: MUTED, fontSize: 11, textAlign: "right" }}>
               <div><span style={{ color: "#22c55e" }}>●</span> Txflow market data</div>
               <div style={{ marginTop: 8 }}>
-                {lastUpdated
+                {refreshing ? "Refreshing market data…" : lastUpdated
                   ? `Updated ${lastUpdated.toLocaleTimeString()}`
                   : "Waiting for data"}
               </div>
