@@ -2086,3 +2086,59 @@ main.home-page .home-shell {
     rgba(9, 11, 8, .48) 100%
   ) !important;
 }
+
+
+/* Table surfaces — match the charcoal and muted-lime Txflow theme */
+:root {
+  --table-surface: #10150e;
+  --table-header: #171e12;
+  --table-border: rgba(151, 177, 112, .16);
+  --table-row-hover: rgba(197, 246, 107, .045);
+}
+
+main table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--table-surface) !important;
+  color: #e4eadc;
+}
+
+main table thead {
+  background: var(--table-header) !important;
+}
+
+main table thead th {
+  background: var(--table-header) !important;
+  color: #a9b995 !important;
+  border-color: var(--table-border) !important;
+}
+
+main table tbody tr {
+  background: transparent !important;
+  border-color: var(--table-border) !important;
+}
+
+main table tbody td {
+  background: transparent !important;
+  color: #d6dfcc;
+  border-color: var(--table-border) !important;
+}
+
+main table tbody tr:hover {
+  background: var(--table-row-hover) !important;
+}
+
+main.home-page .home-shell [style*="background: #0d0d0d"],
+main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
+  background: var(--table-surface) !important;
+  border-color: var(--table-border) !important;
+}
+
+.home-shell .home-traders-table thead,
+.home-shell .home-traders-table thead th {
+  background: var(--table-header) !important;
+}
+
+.home-shell .home-traders-table tbody tr:hover {
+  background: var(--table-row-hover) !important;
+}
