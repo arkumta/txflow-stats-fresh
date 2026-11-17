@@ -126,6 +126,10 @@ function ComparisonContent() {
       return;
     }
 
+    compareInFlight.current = true;
+    const requestId = ++compareVersion.current;
+    const controller = new AbortController();
+    compareController.current = controller;
     setLoading(true);
 
     try {
@@ -148,16 +152,25 @@ function ComparisonContent() {
         })
       );
 
-      setResults(responses);
-      setHasCompared(true);
+      if (requestId === compareVersion.current) {
+        setResults(responses);
+        setError("");
+      }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to compare these wallets."
-      );
+      if (err instanceof Error && err.name === "AbortError") return;
+      if (requestId === compareVersion.current) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to compare these wallets."
+        );
+      }
     } finally {
-      setLoading(false);
+      if (requestId === compareVersion.current) {
+        compareInFlight.current = false;
+        compareController.current = null;
+        setLoading(false);
+      }
     }
   }
 
