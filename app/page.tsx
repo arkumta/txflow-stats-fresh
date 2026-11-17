@@ -4,7 +4,7 @@
 import PnlCards from "./components/PnlCards";
 import VolumeChart from "./components/VolumeChart";
 import MarketsTable from "./components/MarketsTable";
-import DataRainBackground from "./components/DataRainBackground";
+import DataRain from "@/components/ui/data-rain";
 import { useEffect, useState } from "react";
 
 type Overview = {
@@ -214,7 +214,7 @@ export default function Home() {
 
   return (
     <main className="home-page">
-      <DataRainBackground />
+      <DataRain />
       {/* The duplicate Navbar has been removed.
           app/layout.tsx already renders the shared Navbar. */}
 
