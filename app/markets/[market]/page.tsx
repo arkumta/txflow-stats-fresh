@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import PriceChart from "../../components/PriceChart";
+import VolumeChart from "../../components/VolumeChart";
 import { Suspense } from "react";
 
 type MarketMeta = {
@@ -495,6 +496,8 @@ function MarketDetailContent() {
 
           <PriceChart coin={marketName} />
         </section>
+
+        <VolumeChart coin={marketName} />
 
         <section style={{ ...cardStyle, marginBottom: 22 }}>
           <h2 style={{ fontSize: 17, margin: "0 0 16px" }}>
