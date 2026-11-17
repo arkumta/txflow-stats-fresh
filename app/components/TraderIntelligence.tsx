@@ -72,6 +72,7 @@ export default function TraderIntelligence({ wallet }: { wallet: string }) {
 
   useEffect(() => {
     let active = true;
+    const historyController = new AbortController();
     async function loadHistory() {
       try {
         const response = await fetch(`/api/trader-position-history?wallet=${encodeURIComponent(wallet)}&limit=100`, { signal: historyController.signal });
@@ -85,7 +86,15 @@ export default function TraderIntelligence({ wallet }: { wallet: string }) {
     loadPositions();
     loadHistory();
     const timer = window.setInterval(loadPositions, 30000);
-    return () => {\n      active = false;\n      window.clearInterval(timer);\n      historyController.abort();\n      positionsRequestId.current += 1;\n      positionsController.current?.abort();\n      positionsController.current = null;\n      positionsInFlight.current = false;\n    };
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      historyController.abort();
+      positionsRequestId.current += 1;
+      positionsController.current?.abort();
+      positionsController.current = null;
+      positionsInFlight.current = false;
+    };
   }, [loadPositions, wallet]);
 
   return (
@@ -103,7 +112,8 @@ export default function TraderIntelligence({ wallet }: { wallet: string }) {
             </table></div>
           )}
         </div>
-        {error && positions.length > 0 && <p role="status" style={{ color: "#ffb3a8", fontSize: 11 }}>Refresh failed; showing the last successful positions. {error}</p>}\n        {updatedAt && <p style={muted}>{refreshing ? "Refreshing positions…" : "Last updated: " + new Date(updatedAt).toLocaleTimeString()}</p>}
+        {error && positions.length > 0 && <p role="status" style={{ color: "#ffb3a8", fontSize: 11 }}>Refresh failed; showing the last successful positions. {error}</p>}
+        {updatedAt && <p style={muted}>{refreshing ? "Refreshing positions…" : "Last updated: " + new Date(updatedAt).toLocaleTimeString()}</p>}
       </section>
 
       <section>
