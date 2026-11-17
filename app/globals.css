@@ -1745,3 +1745,51 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible {
   .home-stat-card { border-radius: 11px !important; }
 }
 
+/* Brand alignment: Txflow lime-green accents, keeping the cleaner surfaces */
+:root {
+  --lime: #c5f66b;
+  --lime-soft: #dcff9b;
+  --violet: #c5f66b;
+  --cyan: #d5f58c;
+  --positive: #55d6a0;
+  --danger: #ff7185;
+}
+.txflow-header { border-bottom-color:rgba(197,246,107,.14); }
+.txflow-brand-mark { background:#c5f66b; color:#10150b; box-shadow:0 0 22px rgba(197,246,107,.12); }
+.txflow-brand-title span { color:#c5f66b; }
+.txflow-nav-link-active { color:#d8f7a1 !important; border-color:rgba(197,246,107,.24); background:rgba(197,246,107,.09) !important; }
+.txflow-wallet-search { border-color:#344027; background:#10140e; }
+.txflow-wallet-search button { border-color:#3c4b2b; background:#20291a; color:#d0f28d; }
+.txflow-join-button { border-color:#c5f66b; background:#c5f66b; color:#11160c !important; box-shadow:0 5px 18px rgba(197,246,107,.10); }
+.txflow-join-button:hover { background:#dcff9b; }
+.txflow-mobile-toggle { border-color:#35422a; background:#151b11; }
+.home-eyebrow,.home-section-kicker { color:#a9b98d; }
+.home-live-dot { background:#c5f66b; box-shadow:0 0 10px rgba(197,246,107,.35); }
+.home-eyebrow-divider { color:#64764a; }
+.home-hero h1 span { color:#c5f66b !important; background:none; -webkit-text-fill-color:#c5f66b; }
+.home-status-pill { border-color:rgba(197,246,107,.22); background:rgba(197,246,107,.06); color:#d6efad; }
+.home-price-card { border-color:rgba(197,246,107,.22) !important; background:#111511 !important; }
+.home-price-symbol { border-color:rgba(197,246,107,.24); background:rgba(197,246,107,.08); color:#c5f66b; }
+.home-price-live { border-color:rgba(197,246,107,.25); color:#c5f66b; background:rgba(197,246,107,.06); }
+.home-price-spark path { stroke:#c5f66b; }
+.home-stat-card:hover { border-color:rgba(197,246,107,.32) !important; }
+.home-stat-featured { background:#151a11 !important; border-color:rgba(197,246,107,.28) !important; }
+.home-stat-icon { border-color:rgba(197,246,107,.20); background:rgba(197,246,107,.07); color:#c5f66b; }
+.home-stat-featured .home-stat-value { color:#d2f48e; }
+.home-stat-dot { background:#c5f66b; }
+.home-stat-index { color:rgba(197,246,107,.045); }
+.home-section-tag { border-color:rgba(197,246,107,.20); background:rgba(197,246,107,.045); color:#cce99a; }
+.home-text-link,.home-wallet-link { color:#c5f66b; }
+.home-text-link:hover,.home-wallet-link:hover { color:#e0ffad; }
+.home-shell input,.home-shell select,.home-shell textarea { border-color:#35422a !important; background-color:#10140e !important; }
+.home-shell tbody tr:hover,.home-traders-table tbody tr:hover { background:rgba(197,246,107,.035) !important; }
+.home-rank-1 { border-color:#c5f66b; background:#c5f66b; color:#11160c; }
+.home-rank-2 { border-color:#53633e; background:#20291a; color:#d6e5c4; }
+.home-rank-3 { border-color:#594f38; background:#292519; color:#d8c79e; }
+.home-volume-cell { color:#c5f66b !important; }
+.home-panel-footer a,.home-footer a { color:#c5e99a; }
+.home-footer b { background:#c5f66b; color:#11160c; }
+main:not(.home-page) input,main:not(.home-page) select,main:not(.home-page) textarea { border-color:#35422a !important; background:#10140e !important; }
+main:not(.home-page) tbody tr:hover { background:rgba(197,246,107,.035) !important; }
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible { outline-color:#c5f66b; }
+
