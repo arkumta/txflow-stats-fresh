@@ -235,7 +235,7 @@ export default function Home() {
             </h1>
 
             <p>
-              Essential market data and trader activity for Txflow Perpetuals.
+              A clear view of Txflow perpetual markets, market structure, and performance.
             </p>
 
             <div className="home-hero-meta">
