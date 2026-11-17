@@ -358,16 +358,7 @@ export default function TradersPage() {
   ];
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: `radial-gradient(ellipse at 50% -18%, #1a2112 0%, ${colors.background} 46%)`,
-        color: colors.text,
-        padding: "28px 24px 64px",
-        fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif",
-      }}
-    >
+    <main className="traders-leaderboard-page">
       <div style={{ maxWidth: 1440, margin: "0 auto" }}>
         <div
           style={{
