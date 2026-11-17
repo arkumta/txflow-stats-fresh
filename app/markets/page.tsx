@@ -31,7 +31,20 @@ type MarketData = {
 
 type SortKey = "volume" | "price" | "openInterest" | "funding" | "change";
 
+type MarketRow = Market & {
+  data?: MarketData;
+  lastPrice: number;
+  markPrice: number;
+  volume: number;
+  openInterest: number;
+  funding: number;
+  change: number | null;
+  high: number;
+  low: number;
+};
+
 const LIME = "#c7f36b";
+const MUTED = "#8b9085";
 
 function number(value: unknown): number {
   if (value === null || value === undefined || value === "") return 0;
@@ -41,7 +54,6 @@ function number(value: unknown): number {
 
 function money(value: number, decimals = 2): string {
   if (!Number.isFinite(value)) return "—";
-
   return value.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
@@ -52,7 +64,6 @@ function money(value: number, decimals = 2): string {
 
 function compactMoney(value: number): string {
   if (!Number.isFinite(value)) return "—";
-
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -63,7 +74,6 @@ function compactMoney(value: number): string {
 
 function price(value: number): string {
   if (!value) return "—";
-
   return money(value, value >= 100 ? 2 : value >= 1 ? 4 : 6);
 }
 
@@ -92,6 +102,362 @@ function MarketIcon({ name }: { name: string }) {
     >
       {symbol.slice(0, 4).toUpperCase()}
     </div>
+  );
+}
+
+function MarketMoverPanel({
+  title,
+  markets,
+  positive,
+  loading,
+}: {
+  title: string;
+  markets: MarketRow[];
+  positive: boolean;
+  loading: boolean;
+}) {
+  const accent = positive ? LIME : "#ff8177";
+
+  return (
+    <section
+      style={{
+        background: "#10120f",
+        border: "1px solid #292d25",
+        borderRadius: 16,
+        padding: 20,
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
+        <h2 style={{ fontSize: 17, margin: 0, fontWeight: 750 }}>
+          {title}
+        </h2>
+        <span
+          style={{
+            color: accent,
+            background: positive ? "#20271b" : "#2a1b19",
+            borderRadius: 8,
+            padding: "6px 9px",
+            fontSize: 11,
+            fontWeight: 750,
+          }}
+        >
+          {positive ? "▲ GAINERS" : "▼ LOSERS"}
+        </span>
+      </div>
+
+      {loading ? (
+        <p style={{ color: MUTED, fontSize: 13 }}>Loading market data...</p>
+      ) : markets.length === 0 ? (
+        <p style={{ color: MUTED, fontSize: 13 }}>
+          No price change data available.
+        </p>
+      ) : (
+        markets.map((market, index) => (
+          <Link
+            key={market.name}
+            href={`/markets/${encodeURIComponent(market.name)}`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              padding: "12px 0",
+              borderTop: "1px solid #292d25",
+              textDecoration: "none",
+              color: "#f5f6f2",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 11,
+                minWidth: 0,
+              }}
+            >
+              <span
+                style={{
+                  color: MUTED,
+                  fontSize: 11,
+                  width: 15,
+                  flexShrink: 0,
+                }}
+              >
+                {index + 1}
+              </span>
+              <MarketIcon name={market.name} />
+              <span style={{ minWidth: 0 }}>
+                <strong style={{ display: "block", fontSize: 13 }}>
+                  {market.name}
+                </strong>
+                <span
+                  style={{
+                    display: "block",
+                    color: MUTED,
+                    fontSize: 11,
+                    marginTop: 4,
+                  }}
+                >
+                  {price(market.lastPrice)}
+                </span>
+              </span>
+            </div>
+
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <strong style={{ color: accent, fontSize: 14 }}>
+                {percent(market.change ?? 0)}
+              </strong>
+              <span
+                style={{
+                  display: "block",
+                  color: MUTED,
+                  fontSize: 10,
+                  marginTop: 4,
+                }}
+              >
+                Vol. {compactMoney(market.volume)}
+              </span>
+            </div>
+          </Link>
+        ))
+      )}
+    </section>
+  );
+}
+
+function FundingRatePanel({
+  title,
+  markets,
+  positive,
+  loading,
+}: {
+  title: string;
+  markets: MarketRow[];
+  positive: boolean;
+  loading: boolean;
+}) {
+  const accent = positive ? LIME : "#ff8177";
+
+  return (
+    <section
+      style={{
+        background: "#10120f",
+        border: "1px solid #292d25",
+        borderRadius: 16,
+        padding: 20,
+        minWidth: 0,
+      }}
+    >
+      <h2 style={{ fontSize: 17, margin: "0 0 8px", fontWeight: 750 }}>
+        {title}
+      </h2>
+      <p style={{ color: MUTED, fontSize: 11, margin: "0 0 12px" }}>
+        {positive
+          ? "Long positions pay short positions."
+          : "Short positions pay long positions."}
+      </p>
+
+      {loading ? (
+        <p style={{ color: MUTED, fontSize: 13 }}>Loading funding rates...</p>
+      ) : markets.length === 0 ? (
+        <p style={{ color: MUTED, fontSize: 13 }}>
+          No non-zero funding rates available.
+        </p>
+      ) : (
+        markets.map((market, index) => (
+          <Link
+            key={market.name}
+            href={`/markets/${encodeURIComponent(market.name)}`}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 0",
+              borderTop: "1px solid #292d25",
+              textDecoration: "none",
+              color: "#f5f6f2",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+              <span style={{ color: MUTED, fontSize: 11 }}>{index + 1}</span>
+              <MarketIcon name={market.name} />
+              <div>
+                <strong style={{ display: "block", fontSize: 13 }}>
+                  {market.name}
+                </strong>
+                <span style={{ color: MUTED, fontSize: 11 }}>
+                  Est. ${Math.abs(market.funding) * 1000 < 0.01
+                    ? (Math.abs(market.funding) * 1000).toFixed(6)
+                    : (Math.abs(market.funding) * 1000).toFixed(4)} per $1,000
+                </span>
+              </div>
+            </div>
+
+            <strong style={{ color: accent, fontSize: 14 }}>
+              {percent(market.funding * 100, 4)}
+            </strong>
+          </Link>
+        ))
+      )}
+    </section>
+  );
+}
+
+
+function MarketVolumePanel({
+  markets,
+  loading,
+}: {
+  markets: MarketRow[];
+  loading: boolean;
+}) {
+  const totalVolume = markets.reduce((sum, market) => sum + market.volume, 0);
+
+  return (
+    <section
+      style={{
+        background: "#10120f",
+        border: "1px solid #292d25",
+        borderRadius: 16,
+        padding: 20,
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 8,
+        }}
+      >
+        <h2 style={{ fontSize: 17, margin: 0, fontWeight: 750 }}>
+          Top Markets by Volume
+        </h2>
+        <span
+          style={{
+            color: LIME,
+            background: "#20271b",
+            borderRadius: 8,
+            padding: "6px 9px",
+            fontSize: 11,
+            fontWeight: 750,
+            whiteSpace: "nowrap",
+          }}
+        >
+          24H VOLUME
+        </span>
+      </div>
+      <p style={{ color: MUTED, fontSize: 11, margin: "0 0 12px" }}>
+        Top 10 markets ranked by trading volume over the last 24 hours.
+      </p>
+
+      {loading ? (
+        <p style={{ color: MUTED, fontSize: 13 }}>Loading volume data...</p>
+      ) : markets.length === 0 ? (
+        <p style={{ color: MUTED, fontSize: 13 }}>No volume data available.</p>
+      ) : (
+        markets.map((market, index) => {
+          const volumeShare = totalVolume > 0
+            ? (market.volume / totalVolume) * 100
+            : 0;
+
+          return (
+            <Link
+              key={market.name}
+              href={`/markets/${encodeURIComponent(market.name)}`}
+              style={{
+                display: "block",
+                padding: "13px 0",
+                borderTop: "1px solid #292d25",
+                textDecoration: "none",
+                color: "#f5f6f2",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={{ color: MUTED, fontSize: 11, width: 16, flexShrink: 0 }}>
+                    {index + 1}
+                  </span>
+                  <MarketIcon name={market.name} />
+                  <span style={{ minWidth: 0 }}>
+                    <strong style={{ display: "block", fontSize: 13 }}>
+                      {market.name}
+                    </strong>
+                    <span
+                      style={{
+                        display: "block",
+                        color: MUTED,
+                        fontSize: 11,
+                        marginTop: 4,
+                      }}
+                    >
+                      Price {price(market.lastPrice)} · OI {compactMoney(market.openInterest)}
+                    </span>
+                  </span>
+                </div>
+                <strong style={{ fontSize: 14, whiteSpace: "nowrap" }}>
+                  {compactMoney(market.volume)}
+                </strong>
+              </div>
+              <div
+                style={{
+                  height: 5,
+                  background: "#252a20",
+                  borderRadius: 99,
+                  overflow: "hidden",
+                  margin: "10px 0 0 26px",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${Math.min(100, volumeShare)}%`,
+                    background: LIME,
+                    borderRadius: 99,
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  color: MUTED,
+                  fontSize: 10,
+                  textAlign: "right",
+                  marginTop: 5,
+                }}
+              >
+                {volumeShare.toFixed(2)}% of top 10 volume
+              </div>
+            </Link>
+          );
+        })
+      )}
+    </section>
   );
 }
 
@@ -155,18 +521,21 @@ export default function MarketsPage() {
     return () => clearInterval(interval);
   }, [loadMarkets]);
 
-  const dataByCoin = useMemo(() => {
-    return new Map(marketData.map((item) => [item.coin, item]));
-  }, [marketData]);
+  const dataByCoin = useMemo(
+    () => new Map(marketData.map((item) => [item.coin, item])),
+    [marketData]
+  );
 
-  const rows = useMemo(() => {
+  const rows = useMemo<MarketRow[]>(() => {
     return markets
       .filter((market) => {
         if (!showInactive && (market.haltTrading || market.delisted)) {
           return false;
         }
 
-        return market.name.toLowerCase().includes(search.trim().toLowerCase());
+        return market.name
+          .toLowerCase()
+          .includes(search.trim().toLowerCase());
       })
       .map((market) => {
         const data = dataByCoin.get(market.name);
@@ -175,10 +544,12 @@ export default function MarketsPage() {
         const effectivePrice = lastPrice || markPrice;
         const previousPrice = number(data?.prevDayPx);
         const volume = number(data?.dayNtlVlm);
-        const openInterest = number(data?.openInterest) * (markPrice || effectivePrice);
+        const openInterest =
+          number(data?.openInterest) * (markPrice || effectivePrice);
         const funding = number(data?.nodeCtx?.funding);
+
         const change =
-          previousPrice > 0
+          previousPrice > 0 && effectivePrice > 0
             ? ((effectivePrice - previousPrice) / previousPrice) * 100
             : null;
 
@@ -222,7 +593,68 @@ export default function MarketsPage() {
 
         return (aValue - bValue) * direction;
       });
-  }, [markets, dataByCoin, search, sortBy, sortDirection, showInactive]);
+  }, [
+    markets,
+    dataByCoin,
+    search,
+    sortBy,
+    sortDirection,
+    showInactive,
+  ]);
+
+  // Market Movers use all active markets, independently of the table search.
+  const activeMarketRows = useMemo(
+    () =>
+      rows.filter(
+        (market) => !market.haltTrading && !market.delisted
+      ),
+    [rows]
+  );
+
+  const topGainers = useMemo(
+    () =>
+      [...activeMarketRows]
+        .filter((market) => market.change !== null && market.change > 0)
+        .sort((a, b) => (b.change ?? 0) - (a.change ?? 0))
+        .slice(0, 5),
+    [activeMarketRows]
+  );
+
+  const topLosers = useMemo(
+    () =>
+      [...activeMarketRows]
+        .filter((market) => market.change !== null && market.change < 0)
+        .sort((a, b) => (a.change ?? 0) - (b.change ?? 0))
+        .slice(0, 5),
+    [activeMarketRows]
+  );
+
+const topPositiveFunding = useMemo(
+  () =>
+    [...activeMarketRows]
+      .filter((market) => market.funding > 0)
+      .sort((a, b) => b.funding - a.funding)
+      .slice(0, 5),
+  [activeMarketRows]
+);
+
+const topNegativeFunding = useMemo(
+  () =>
+    [...activeMarketRows]
+      .filter((market) => market.funding < 0)
+      .sort((a, b) => a.funding - b.funding)
+      .slice(0, 5),
+  [activeMarketRows]
+);
+
+  const topVolumeMarkets = useMemo(
+    () =>
+      [...activeMarketRows]
+        .filter((market) => market.data && market.volume > 0)
+        .sort((a, b) => b.volume - a.volume)
+        .slice(0, 10),
+    [activeMarketRows]
+  );
 
   const totals = useMemo(() => {
     const active = markets.filter(
@@ -256,11 +688,11 @@ export default function MarketsPage() {
     minWidth: 0,
   } as const;
 
-  const muted = "#8b9085";
-
   function changeSort(key: SortKey) {
     if (sortBy === key) {
-      setSortDirection((previous) => previous === "desc" ? "asc" : "desc");
+      setSortDirection((previous) =>
+        previous === "desc" ? "asc" : "desc"
+      );
     } else {
       setSortBy(key);
       setSortDirection("desc");
@@ -275,7 +707,7 @@ export default function MarketsPage() {
         style={{
           border: 0,
           background: "transparent",
-          color: sortBy === key ? LIME : muted,
+          color: sortBy === key ? LIME : MUTED,
           fontSize: 11,
           fontWeight: 700,
           cursor: "pointer",
@@ -284,7 +716,12 @@ export default function MarketsPage() {
           textAlign: "right",
         }}
       >
-        {label} {sortBy === key ? (sortDirection === "desc" ? "↓" : "↑") : ""}
+        {label}{" "}
+        {sortBy === key
+          ? sortDirection === "desc"
+            ? "↓"
+            : "↑"
+          : ""}
       </button>
     );
   }
@@ -310,12 +747,12 @@ export default function MarketsPage() {
             display: "flex",
             alignItems: "center",
             gap: 8,
-            color: muted,
+            color: MUTED,
             fontSize: 12,
             marginBottom: 22,
           }}
         >
-          <Link href="/" style={{ color: muted, textDecoration: "none" }}>
+          <Link href="/" style={{ color: MUTED, textDecoration: "none" }}>
             Dashboard
           </Link>
           <span>/</span>
@@ -355,7 +792,7 @@ export default function MarketsPage() {
             >
               Markets
             </h1>
-            <p style={{ color: muted, margin: 0, fontSize: 14 }}>
+            <p style={{ color: MUTED, margin: 0, fontSize: 14 }}>
               Explore prices, trading volume, open interest and funding rates.
             </p>
           </div>
@@ -365,7 +802,7 @@ export default function MarketsPage() {
             onClick={() => void loadMarkets(true)}
             disabled={refreshing}
             style={{
-              background: "#c7f36b",
+              background: LIME,
               color: "#11150b",
               border: 0,
               borderRadius: 10,
@@ -388,40 +825,111 @@ export default function MarketsPage() {
           }}
         >
           <div style={cardStyle}>
-            <div style={{ color: muted, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
+            <div style={{ color: MUTED, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
               24H TRADING VOLUME
             </div>
             <div style={{ fontSize: 29, fontWeight: 750, marginTop: 15 }}>
-              {loading && !marketData.length ? "Loading..." : compactMoney(totals.totalVolume)}
+              {loading && !marketData.length
+                ? "Loading..."
+                : compactMoney(totals.totalVolume)}
             </div>
-            <div style={{ color: muted, fontSize: 12, marginTop: 9 }}>
+            <div style={{ color: MUTED, fontSize: 12, marginTop: 9 }}>
               Across available markets
             </div>
           </div>
 
           <div style={cardStyle}>
-            <div style={{ color: muted, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
+            <div style={{ color: MUTED, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
               OPEN INTEREST
             </div>
             <div style={{ fontSize: 29, fontWeight: 750, marginTop: 15 }}>
-              {loading && !marketData.length ? "Loading..." : compactMoney(totals.totalOpenInterest)}
+              {loading && !marketData.length
+                ? "Loading..."
+                : compactMoney(totals.totalOpenInterest)}
             </div>
-            <div style={{ color: muted, fontSize: 12, marginTop: 9 }}>
+            <div style={{ color: MUTED, fontSize: 12, marginTop: 9 }}>
               Estimated USD value of open positions
             </div>
           </div>
 
           <div style={cardStyle}>
-            <div style={{ color: muted, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
+            <div style={{ color: MUTED, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
               ACTIVE MARKETS
             </div>
             <div style={{ fontSize: 29, fontWeight: 750, marginTop: 15 }}>
-              {loading && !markets.length ? "Loading..." : totals.activeMarkets.toLocaleString("en-US")}
+              {loading && !markets.length
+                ? "Loading..."
+                : totals.activeMarkets.toLocaleString("en-US")}
             </div>
-            <div style={{ color: muted, fontSize: 12, marginTop: 9 }}>
+            <div style={{ color: MUTED, fontSize: 12, marginTop: 9 }}>
               {totals.listedMarkets} listed markets
             </div>
           </div>
+        </div>
+
+        {/* NEW: Top Gainers and Top Losers */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: 16,
+            marginBottom: 28,
+          }}
+        >
+          <MarketMoverPanel
+            title="Top Gainers"
+            markets={topGainers}
+            positive
+            loading={loading}
+          />
+          <MarketMoverPanel
+            title="Top Losers"
+            markets={topLosers}
+            positive={false}
+            loading={loading}
+          />
+        </div>
+
+{/* Funding Rate Leaderboard */}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: 16,
+    marginBottom: 12,
+  }}
+>
+  <FundingRatePanel
+    title="Highest Positive Funding"
+    markets={topPositiveFunding}
+    positive
+    loading={loading}
+  />
+
+  <FundingRatePanel
+    title="Highest Negative Funding"
+    markets={topNegativeFunding}
+    positive={false}
+    loading={loading}
+  />
+</div>
+
+<p
+  style={{
+    color: MUTED,
+    fontSize: 11,
+    lineHeight: 1.6,
+    margin: "0 2px 24px",
+  }}
+>
+  Estimated payment assumes a $1,000 notional position and the current
+  funding rate. The API response does not specify the settlement interval.
+  This is an estimate per funding event, not an hourly or annualized
+  projection. Actual payments may vary.
+</p>
+
+        <div style={{ marginBottom: 28 }}>
+          <MarketVolumePanel markets={topVolumeMarkets} loading={loading} />
         </div>
 
         <section
@@ -447,8 +955,13 @@ export default function MarketsPage() {
               <h2 style={{ fontSize: 18, margin: "0 0 7px", fontWeight: 750 }}>
                 All markets
               </h2>
-              <p style={{ color: muted, fontSize: 12, margin: 0 }}>
-                {rows.length} markets shown · Sorted by {sortBy === "openInterest" ? "open interest" : sortBy === "change" ? "24H change" : sortBy}
+              <p style={{ color: MUTED, fontSize: 12, margin: 0 }}>
+                {rows.length} markets shown · Sorted by{" "}
+                {sortBy === "openInterest"
+                  ? "open interest"
+                  : sortBy === "change"
+                    ? "24H change"
+                    : sortBy}
               </p>
             </div>
 
@@ -465,7 +978,7 @@ export default function MarketsPage() {
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
-                  color: muted,
+                  color: MUTED,
                   fontSize: 12,
                   cursor: "pointer",
                 }}
@@ -543,7 +1056,7 @@ export default function MarketsPage() {
                 <tr style={{ borderBottom: "1px solid #292d25" }}>
                   <th
                     style={{
-                      color: muted,
+                      color: MUTED,
                       textAlign: "left",
                       fontSize: 11,
                       padding: "0 20px",
@@ -552,12 +1065,29 @@ export default function MarketsPage() {
                   >
                     MARKET
                   </th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("price", "LAST PRICE")}</th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("change", "24H CHANGE")}</th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("volume", "24H VOLUME")}</th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("openInterest", "OPEN INTEREST")}</th>
-                  <th style={{ textAlign: "right" }}>{sortLabel("funding", "FUNDING RATE")}</th>
-                  <th style={{ textAlign: "right", padding: "12px 20px", color: muted, fontSize: 11 }}>
+                  <th style={{ textAlign: "right" }}>
+                    {sortLabel("price", "LAST PRICE")}
+                  </th>
+                  <th style={{ textAlign: "right" }}>
+                    {sortLabel("change", "24H CHANGE")}
+                  </th>
+                  <th style={{ textAlign: "right" }}>
+                    {sortLabel("volume", "24H VOLUME")}
+                  </th>
+                  <th style={{ textAlign: "right" }}>
+                    {sortLabel("openInterest", "OPEN INTEREST")}
+                  </th>
+                  <th style={{ textAlign: "right" }}>
+                    {sortLabel("funding", "FUNDING RATE")}
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "right",
+                      padding: "12px 20px",
+                      color: MUTED,
+                      fontSize: 11,
+                    }}
+                  >
                     24H RANGE
                   </th>
                 </tr>
@@ -566,14 +1096,16 @@ export default function MarketsPage() {
               <tbody>
                 {loading && !markets.length ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: 50, textAlign: "center", color: muted }}>
+                    <td colSpan={7} style={{ padding: 50, textAlign: "center", color: MUTED }}>
                       Loading Txflow markets...
                     </td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: 50, textAlign: "center", color: muted }}>
-                      {error ? "Market data could not be loaded." : "No markets match your search."}
+                    <td colSpan={7} style={{ padding: 50, textAlign: "center", color: MUTED }}>
+                      {error
+                        ? "Market data could not be loaded."
+                        : "No markets match your search."}
                     </td>
                   </tr>
                 ) : (
@@ -602,9 +1134,18 @@ export default function MarketsPage() {
                               <span style={{ display: "block", fontWeight: 750 }}>
                                 {market.name}
                               </span>
-                              <span style={{ display: "block", color: muted, fontSize: 11, marginTop: 4 }}>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: MUTED,
+                                  fontSize: 11,
+                                  marginTop: 4,
+                                }}
+                              >
                                 Perpetual
-                                {market.maxLeverage ? ` · Up to ${market.maxLeverage}x` : ""}
+                                {market.maxLeverage
+                                  ? ` · Up to ${market.maxLeverage}x`
+                                  : ""}
                               </span>
                             </span>
                           </Link>
@@ -618,7 +1159,12 @@ export default function MarketsPage() {
                           style={{
                             textAlign: "right",
                             padding: "15px 10px",
-                            color: change === null ? muted : change >= 0 ? LIME : "#ff8177",
+                            color:
+                              change === null
+                                ? MUTED
+                                : change >= 0
+                                  ? LIME
+                                  : "#ff8177",
                           }}
                         >
                           {change === null ? "—" : percent(change)}
@@ -636,7 +1182,12 @@ export default function MarketsPage() {
                           style={{
                             textAlign: "right",
                             padding: "15px 10px",
-                            color: fundingPercent > 0 ? LIME : fundingPercent < 0 ? "#ff8177" : muted,
+                            color:
+                              fundingPercent > 0
+                                ? LIME
+                                : fundingPercent < 0
+                                  ? "#ff8177"
+                                  : MUTED,
                           }}
                         >
                           {market.data ? percent(fundingPercent, 4) : "—"}
@@ -646,7 +1197,14 @@ export default function MarketsPage() {
                           <span style={{ display: "block", fontSize: 12 }}>
                             {market.high ? price(market.high) : "—"}
                           </span>
-                          <span style={{ display: "block", color: muted, fontSize: 11, marginTop: 4 }}>
+                          <span
+                            style={{
+                              display: "block",
+                              color: MUTED,
+                              fontSize: 11,
+                              marginTop: 4,
+                            }}
+                          >
                             Low {market.low ? price(market.low) : "—"}
                           </span>
                         </td>
@@ -667,7 +1225,7 @@ export default function MarketsPage() {
               alignItems: "center",
               gap: 12,
               flexWrap: "wrap",
-              color: muted,
+              color: MUTED,
               fontSize: 11,
             }}
           >
