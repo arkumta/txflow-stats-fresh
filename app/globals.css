@@ -2072,3 +2072,17 @@ main.home-page .home-shell {
     opacity: .35;
   }
 }
+
+
+/* Keep the Data Rain restrained so the dashboard remains the focus */
+.dr-main { opacity: .52 !important; }
+.dr-bloom { opacity: .12 !important; filter: blur(5px) !important; }
+.dr-grain { opacity: .018 !important; }
+.dr-vignette {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(9, 11, 8, .04) 0%,
+    rgba(9, 11, 8, .18) 58%,
+    rgba(9, 11, 8, .48) 100%
+  ) !important;
+}
