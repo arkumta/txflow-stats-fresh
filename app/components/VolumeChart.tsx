@@ -67,7 +67,7 @@ function formatTooltipTimestamp(value: string) {
   });
 }
 
-export default function VolumeChart() {
+export default function VolumeChart({ coin }: { coin?: string }) {
   const [period, setPeriod] = useState<Period>("7D");
   const [metric, setMetric] = useState<Metric>("volume_24h");
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -84,7 +84,7 @@ export default function VolumeChart() {
 
       try {
         const response = await fetch(
-          `/api/market-history?period=${period}`,
+          `/api/market-history?period=${period}${coin ? `&coin=${encodeURIComponent(coin)}` : ""}`,
           {
             cache: "no-store",
             signal: controller.signal,
@@ -122,7 +122,7 @@ export default function VolumeChart() {
     loadHistory();
 
     return () => controller.abort();
-  }, [period, reloadKey]);
+  }, [period, reloadKey, coin]);
 
   const chartData = useMemo(() => {
     return snapshots
@@ -206,7 +206,7 @@ export default function VolumeChart() {
               margin: 0,
             }}
           >
-            HISTORICAL MARKET ANALYTICS
+            {coin ? `${coin} · HISTORICAL ANALYTICS` : "HISTORICAL MARKET ANALYTICS"}
           </p>
 
           <h2
@@ -221,7 +221,7 @@ export default function VolumeChart() {
           </h2>
 
           <p style={{ color: "#777", fontSize: "12px", margin: 0 }}>
-            Explore how market metrics have changed over time.
+            {coin ? `Historical volume and open interest snapshots for ${coin}.` : "Explore how market metrics have changed over time."}
           </p>
         </div>
 
