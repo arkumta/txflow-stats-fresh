@@ -253,14 +253,7 @@ function MarketDetailContent() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#090b08",
-        color: "#f2f4ed",
-        padding: "28px 0 70px",
-      }}
-    >
+    <main className="market-detail-page">
       <div
         style={{
           width: "min(1440px, calc(100% - 40px))",
