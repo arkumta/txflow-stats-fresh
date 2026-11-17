@@ -1,7 +1,6 @@
 
 "use client";
 
-import PnlLeaderboard from "./components/PnlLeaderboard";
 import PnlCards from "./components/PnlCards";
 import VolumeChart from "./components/VolumeChart";
 import MarketsTable from "./components/MarketsTable";
@@ -143,7 +142,7 @@ export default function Home() {
 
       try {
         const response = await fetch(
-          `/api/traders?hours=${period}&limit=10&sort=${sort}`,
+          `/api/traders?hours=${period}&limit=5&sort=${sort}`,
           {
             cache: "no-store",
             signal: controller.signal,
@@ -228,14 +227,13 @@ export default function Home() {
             </div>
 
             <h1>
-              See the market.
+              Market overview
               <br />
               <span>Read the flow.</span>
             </h1>
 
             <p>
-              Real-time market activity, trader performance, and historical
-              analytics for Txflow Perpetuals.
+              Essential market data and trader activity for Txflow Perpetuals.
             </p>
 
             <div className="home-hero-meta">
@@ -243,8 +241,7 @@ export default function Home() {
                 <span className="home-live-dot" />
                 Live market data
               </span>
-              <span className="home-meta-separator" />
-              On-chain trading insights
+
             </div>
           </div>
 
@@ -268,11 +265,6 @@ export default function Home() {
               Price from Txflow market data
             </div>
 
-            <div className="home-price-spark" aria-hidden="true">
-              <svg viewBox="0 0 300 62" preserveAspectRatio="none">
-                <path d="M0 45 C18 43 22 22 43 27 S70 43 90 32 S120 15 142 27 S168 47 187 30 S215 19 232 25 S258 48 278 28 S291 22 300 14" />
-              </svg>
-            </div>
           </div>
         </section>
 
@@ -310,10 +302,7 @@ export default function Home() {
               PERFORMANCE INTELLIGENCE
             </span>
             <h2>Realized PnL</h2>
-            <p>
-              Closed trading performance, calculated from recorded PnL minus
-              fees.
-            </p>
+            <p>Net realized PnL after recorded fees.</p>
           </div>
           <span className="home-section-tag">FILL-BASED DATA</span>
         </div>
@@ -324,7 +313,7 @@ export default function Home() {
           <div>
             <span className="home-section-kicker">MARKET TRENDS</span>
             <h2>Historical market analytics</h2>
-            <p>Explore how key market metrics have changed over time.</p>
+
           </div>
         </div>
 
@@ -334,9 +323,7 @@ export default function Home() {
           <div>
             <span className="home-section-kicker">MARKET MONITOR</span>
             <h2>Markets in focus</h2>
-            <p>
-              The most active perpetual markets by 24-hour trading volume.
-            </p>
+
           </div>
           <a className="home-text-link" href="/markets">
             All markets ↗
@@ -345,29 +332,12 @@ export default function Home() {
 
         <MarketsTable />
 
-        <div className="home-section-heading">
-          <div>
-            <span className="home-section-kicker">
-              TRADER INTELLIGENCE
-            </span>
-            <h2>Top traders by realized PnL</h2>
-            <p>
-              Compare wallets using recorded closed PnL and fee data.
-            </p>
-          </div>
-          <a className="home-text-link" href="/leaderboard">
-            Full leaderboard ↗
-          </a>
-        </div>
-
-        <PnlLeaderboard />
-
         <section className="home-activity-panel" id="traders">
           <div className="home-activity-heading">
             <div>
               <span className="home-section-kicker">WALLET ACTIVITY</span>
               <h2>Top traders</h2>
-              <p>Ranked by trading activity recorded on Txflow.</p>
+
             </div>
 
             <div className="home-activity-controls">
@@ -472,9 +442,7 @@ export default function Home() {
           )}
 
           <div className="home-panel-footer">
-            <span>
-              Rankings use recorded activity for the selected period.
-            </span>
+            <span>Top 5 by selected activity metric.</span>
             <a href="/traders">Explore all traders ↗</a>
           </div>
         </section>
