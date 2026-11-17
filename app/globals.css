@@ -1930,3 +1930,145 @@ main.home-page {
   position: relative;
   z-index: 2;
 }
+
+
+/* Homepage refinement pass — improve desktop use, reading comfort and chart clarity */
+html,
+body {
+  width: 100%;
+  min-width: 320px;
+}
+
+body {
+  overflow-x: clip;
+}
+
+main.home-page {
+  display: block;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  padding-inline: clamp(20px, 4vw, 64px);
+}
+
+main.home-page .home-shell {
+  width: 100%;
+  max-width: 1480px;
+  min-width: 0;
+}
+
+.home-hero {
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, .72fr) !important;
+  gap: clamp(28px, 4vw, 64px) !important;
+}
+
+.home-eyebrow,
+.home-section-kicker {
+  font-size: 11px;
+  letter-spacing: .13em;
+}
+
+.home-hero-copy > p {
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.home-section-heading h2,
+.home-activity-heading h2 {
+  font-size: clamp(24px, 2.2vw, 30px) !important;
+}
+
+.home-section-heading p,
+.home-activity-heading p {
+  font-size: 13px !important;
+}
+
+.home-section-tag {
+  font-size: 10px;
+}
+
+.home-shell section[style*="marginTop"],
+.home-shell div[style*="marginTop"] {
+  min-width: 0;
+}
+
+.home-shell th,
+.home-traders-table th {
+  font-size: 11px !important;
+}
+
+.home-shell td,
+.home-traders-table td {
+  font-size: 13px;
+}
+
+.home-shell select,
+.home-shell input {
+  font-size: 13px;
+}
+
+.home-shell section[style*="marginTop"] h2,
+.home-shell div[style*="marginTop"] h2 {
+  font-size: 24px !important;
+}
+
+.home-shell section[style*="marginTop"] p,
+.home-shell div[style*="marginTop"] p {
+  line-height: 1.65;
+}
+
+.dr-main {
+  opacity: .78;
+}
+
+.dr-bloom {
+  opacity: .32;
+  filter: blur(7px);
+}
+
+.dr-vignette {
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(9, 11, 8, .58) 100%);
+}
+
+@media (min-width: 1500px) {
+  main.home-page .home-shell {
+    max-width: 1480px;
+  }
+}
+
+@media (max-width: 980px) {
+  main.home-page {
+    padding-inline: 24px;
+  }
+  .home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .home-price-card {
+    width: 100%;
+    max-width: 640px;
+  }
+}
+
+@media (max-width: 640px) {
+  main.home-page {
+    padding-inline: 16px;
+  }
+  .home-hero-copy > p {
+    font-size: 14px;
+  }
+  .home-section-heading h2,
+  .home-activity-heading h2 {
+    font-size: 23px !important;
+  }
+  .home-shell section[style*="marginTop"],
+  .home-shell div[style*="marginTop"] {
+    border-radius: 13px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dr-main,
+  .dr-bloom {
+    opacity: .35;
+  }
+}
