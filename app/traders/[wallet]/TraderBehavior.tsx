@@ -40,6 +40,11 @@ type BehaviorData = {
   weekday_activity: ActivityBucket[];
   market_breakdown: Market[];
   side_breakdown: Side[];
+  discipline_analysis?: {
+    active_days: number;
+    daily_fill_coefficient_variation: number;
+    average_fills_per_active_day: number;
+  };
   error?: string;
 };
 
