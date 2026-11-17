@@ -9,7 +9,8 @@ const links = [
   { label: "Screener", href: "/screener" },
   { label: "Traders", href: "/traders" },
   { label: "Positions", href: "/positions" },
-  { label: "Fees", href: "/fees" },
+  { label: "Leaderboard", href: "/leaderboard" },
+  { label: "Tools", href: "/fees" },
 ];
 
 function NavbarContent() {
