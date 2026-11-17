@@ -745,14 +745,7 @@ const topNegativeFunding = useMemo(
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#090a08",
-        color: "#f5f6f2",
-        padding: "30px 0 70px",
-      }}
-    >
+    <main className="markets-directory-page">
       <div
         style={{
           maxWidth: 1440,
