@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
 const TXFLOW_INFO_URL = "https://rpc.txflow-testnet.xyz/info";
 
