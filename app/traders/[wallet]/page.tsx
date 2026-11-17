@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import ActivityChart from "./ActivityChart";
 import TraderPerformanceCalendar from "./TraderPerformanceCalendar";
@@ -71,9 +71,12 @@ function TraderProfileContent() {
   const [activityError, setActivityError] = useState("");
   const [marketsError, setMarketsError] = useState("");
   const [copied, setCopied] = useState(false);
+  const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const signal = controller.signal;
 
 
 async function loadTrader() {
@@ -82,7 +85,8 @@ async function loadTrader() {
 
   try {
     const response = await fetch(
-      `/api/trader-activity?wallet=${encodeURIComponent(wallet)}`
+      `/api/trader-activity?wallet=${encodeURIComponent(wallet)}`,
+      { signal }
     );
 
     const data = await response.json();
@@ -150,7 +154,8 @@ async function loadTrader() {
 
       try {
         const response = await fetch(
-          `/api/trader-trades?wallet=${encodeURIComponent(wallet)}&limit=50`
+          `/api/trader-trades?wallet=${encodeURIComponent(wallet)}&limit=50`,
+          { signal }
         );
 
         const data = await response.json();
@@ -173,7 +178,8 @@ async function loadTrader() {
 
       try {
         const response = await fetch(
-          `/api/trader-activity?wallet=${encodeURIComponent(wallet)}`
+          `/api/trader-activity?wallet=${encodeURIComponent(wallet)}`,
+          { signal }
         );
 
         const data = await response.json();
@@ -198,7 +204,8 @@ async function loadTrader() {
 
       try {
         const response = await fetch(
-          `/api/market-breakdown?wallet=${encodeURIComponent(wallet)}&days=365`
+          `/api/market-breakdown?wallet=${encodeURIComponent(wallet)}&days=365`,
+          { signal }
         );
 
         const data = await response.json();
@@ -226,6 +233,7 @@ async function loadTrader() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [wallet]);
 
@@ -257,11 +265,19 @@ async function loadTrader() {
     try {
       await navigator.clipboard.writeText(wallet);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
+      if (copyResetTimer.current) window.clearTimeout(copyResetTimer.current);
+      copyResetTimer.current = window.setTimeout(() => {
+        setCopied(false);
+        copyResetTimer.current = null;
+      }, 1800);
     } catch {
       setCopied(false);
     }
   }
+
+  useEffect(() => () => {
+    if (copyResetTimer.current) window.clearTimeout(copyResetTimer.current);
+  }, []);
 
   const shortWallet =
     wallet.length > 28
