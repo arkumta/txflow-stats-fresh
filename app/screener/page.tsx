@@ -67,14 +67,10 @@ export default function ScreenerPage() {
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
   const inFlight = useRef(false);
-  const queuedRefresh = useRef(false);
   const requestId = useRef(0);
 
   const load = useCallback(async () => {
-    if (inFlight.current) {
-      queuedRefresh.current = true;
-      return;
-    }
+    if (inFlight.current) return;
 
     inFlight.current = true;
     const currentRequest = ++requestId.current;
@@ -106,10 +102,6 @@ export default function ScreenerPage() {
       inFlight.current = false;
       if (currentRequest === requestId.current) setLoading(false);
 
-      if (queuedRefresh.current) {
-        queuedRefresh.current = false;
-        window.setTimeout(() => void load(), 0);
-      }
     }
   }, []);
 
