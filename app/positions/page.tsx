@@ -1,81 +1,175 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Position = { wallet: string; coin: string; size: number; direction: string; entryPrice: number; markPrice: number; positionValue: number; unrealizedPnl: number };
+type Fill = { id: string; wallet: string; coin: string; direction: string; side: string; size: number; price: number; closedPnl: number; time: number };
+type TraderSnapshot = { wallet: string; positions: Position[]; fills: Fill[]; error?: string };
 const STORAGE_KEY = "txflow-stats-wallet-watchlist";
-const card: React.CSSProperties = { background: "#101410", border: "1px solid #252d25", borderRadius: 12, padding: 18 };
+const panel: React.CSSProperties = { background: "#101410", border: "1px solid #252d25", borderRadius: 14, padding: 18 };
 const muted: React.CSSProperties = { color: "#8e9a8c", fontSize: 12 };
+const lime = "#b8f34a";
+const red = "#ff9292";
 const money = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n || 0);
-const short = (s: string) => s.length > 24 ? `${s.slice(0, 10)}…${s.slice(-8)}` : s;
+const number = (n: number) => Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 6 });
+const short = (s: string) => s.length > 22 ? `${s.slice(0, 9)}…${s.slice(-7)}` : s;
+
+async function getJson(url: string) {
+  const response = await fetch(url, { cache: "no-store" });
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.error || "Request failed");
+  return data;
+}
 
 export default function PositionsPage() {
-  const [coin, setCoin] = useState("");
-  const [positions, setPositions] = useState<Position[]>([]);
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [walletInput, setWalletInput] = useState("");
+  const [snapshots, setSnapshots] = useState<TraderSnapshot[]>([]);
+  const [previous, setPrevious] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
-  const [scanNote, setScanNote] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
+  const [coin, setCoin] = useState("");
+  const [discovery, setDiscovery] = useState<Position[]>([]);
+  const [discoveryNote, setDiscoveryNote] = useState("");
+  const [discovering, setDiscovering] = useState(false);
 
   useEffect(() => {
-    try { setWatchlist(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch { setWatchlist([]); }
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (Array.isArray(saved)) setWatchlist(saved.filter((x): x is string => typeof x === "string" && /^0x[a-fA-F0-9]{40}$/.test(x)));
+    } catch { setWatchlist([]); }
+    setLoaded(true);
   }, []);
 
-  function saveWatchlist(next: string[]) {
-    setWatchlist(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  }
+  const saveWatchlist = useCallback((next: string[]) => {
+    const clean = Array.from(new Set(next.map(w => w.toLowerCase())));
+    setWatchlist(clean);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+  }, []);
 
-  async function scan() {
-    setLoading(true); setError("");
-    try {
-      const response = await fetch(`/api/position-discovery?coin=${encodeURIComponent(coin.trim())}`, { cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || "Position discovery failed.");
-      setPositions(data.positions || []);
-      setScanNote(data.note || `Scanned ${data.walletsScanned} wallets.`);
-    } catch (e) { setError(e instanceof Error ? e.message : "Position discovery failed."); }
-    finally { setLoading(false); }
-  }
+  const refresh = useCallback(async () => {
+    if (watchlist.length === 0) { setSnapshots([]); setLastUpdated(new Date().toISOString()); return; }
+    setLoading(true);
+    setError("");
+    const oldValues: Record<string, number> = {};
+    snapshots.forEach(s => s.positions.forEach(p => { oldValues[`${s.wallet}:${p.coin}`] = p.positionValue; }));
+    const results: TraderSnapshot[] = [];
+    let cursor = 0;
+    const workers = Array.from({ length: Math.min(3, watchlist.length) }, async () => {
+      while (cursor < watchlist.length) {
+        const wallet = watchlist[cursor++];
+        try {
+          const [positionData, historyData] = await Promise.all([
+            getJson(`/api/trader-positions?wallet=${encodeURIComponent(wallet)}`),
+            getJson(`/api/trader-position-history?wallet=${encodeURIComponent(wallet)}&limit=12`),
+          ]);
+          results.push({
+            wallet,
+            positions: (positionData.positions || []).map((p: Omit<Position, "wallet">) => ({ ...p, wallet })),
+            fills: (historyData.fills || []).map((f: Omit<Fill, "wallet">) => ({ ...f, wallet })),
+          });
+        } catch (e) {
+          results.push({ wallet, positions: [], fills: [], error: e instanceof Error ? e.message : "Unable to load trader." });
+        }
+      }
+    });
+    await Promise.all(workers);
+    const ordered = watchlist.map(w => results.find(r => r.wallet === w)).filter((x): x is TraderSnapshot => Boolean(x));
+    setPrevious(oldValues);
+    setSnapshots(ordered);
+    setLastUpdated(new Date().toISOString());
+    setLoading(false);
+    if (ordered.every(x => x.error)) setError("Could not load any watched traders. Please retry in a moment.");
+  }, [watchlist, snapshots]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    refresh();
+    const timer = window.setInterval(refresh, 30000);
+    return () => window.clearInterval(timer);
+  }, [loaded, refresh]);
+
+  const allPositions = useMemo(() => snapshots.flatMap(s => s.positions), [snapshots]);
+  const allFills = useMemo(() => snapshots.flatMap(s => s.fills).sort((a, b) => b.time - a.time).slice(0, 12), [snapshots]);
+  const totalExposure = allPositions.reduce((sum, p) => sum + Math.abs(p.positionValue), 0);
+  const totalPnl = allPositions.reduce((sum, p) => sum + p.unrealizedPnl, 0);
+  const longExposure = allPositions.filter(p => p.direction === "Long").reduce((sum, p) => sum + Math.abs(p.positionValue), 0);
+  const shortExposure = allPositions.filter(p => p.direction === "Short").reduce((sum, p) => sum + Math.abs(p.positionValue), 0);
+  const traderRows = snapshots.map(s => ({
+    ...s,
+    exposure: s.positions.reduce((sum, p) => sum + Math.abs(p.positionValue), 0),
+    pnl: s.positions.reduce((sum, p) => sum + p.unrealizedPnl, 0),
+  })).sort((a, b) => b.exposure - a.exposure);
 
   function addWallet() {
     const wallet = walletInput.trim().toLowerCase();
     if (!/^0x[a-f0-9]{40}$/.test(wallet)) { setError("Enter a valid 0x wallet address."); return; }
     if (!watchlist.includes(wallet)) saveWatchlist([...watchlist, wallet]);
-    setWalletInput(""); setError("");
+    setWalletInput("");
+    setError("");
   }
 
+  async function findPositions() {
+    setDiscovering(true);
+    setError("");
+    try {
+      const data = await getJson(`/api/position-discovery?coin=${encodeURIComponent(coin.trim())}`);
+      setDiscovery(data.positions || []);
+      setDiscoveryNote(data.note || `Scanned ${data.walletsScanned || 0} indexed wallets.`);
+    } catch (e) { setError(e instanceof Error ? e.message : "Position discovery failed."); }
+    finally { setDiscovering(false); }
+  }
+
+  const cell: React.CSSProperties = { padding: "11px 10px", borderTop: "1px solid #252d25", fontSize: 12, whiteSpace: "nowrap" };
+  const inputStyle: React.CSSProperties = { minWidth: 0, background: "#080a08", color: "#f3f7f1", border: "1px solid #344033", borderRadius: 8, padding: 11 };
+
   return (
-    <main style={{ minHeight: "70vh", maxWidth: 1240, margin: "0 auto", padding: "36px 22px 70px", color: "#f3f7f1" }}>
-      <div style={{ marginBottom: 28 }}><div style={{ color: "#b8f34a", fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>TXFLOW / TRADER INTELLIGENCE</div><h1 style={{ fontSize: 34, margin: "9px 0" }}>Position discovery</h1><p style={muted}>Find indexed wallets with open positions, and keep a personal watchlist of traders to monitor.</p></div>
+    <main style={{ minHeight: "70vh", maxWidth: 1320, margin: "0 auto", padding: "34px 22px 70px", color: "#f3f7f1" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16, marginBottom: 25 }}>
+        <div><div style={{ color: lime, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>TXFLOW / TRADER INTELLIGENCE</div><h1 style={{ fontSize: 34, margin: "9px 0" }}>Watchlist monitor</h1><p style={muted}>Track live exposure, unrealized PnL and recent fills across your saved traders.</p></div>
+        <button onClick={refresh} disabled={loading || !loaded} style={{ background: "#1a2410", border: "1px solid #526d2b", color: lime, borderRadius: 8, padding: "10px 15px", fontWeight: 750, cursor: "pointer" }}>{loading ? "Refreshing…" : "↻ Refresh now"}</button>
+      </div>
 
-      <section style={{ ...card, marginBottom: 24 }}>
-        <h2 style={{ margin: "0 0 8px", fontSize: 19 }}>Discover traders by market</h2>
-        <p style={muted}>Search up to 20 wallets from the existing trader index. Leave the market blank to show all positions found.</p>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input value={coin} onChange={e => setCoin(e.target.value)} placeholder="Market e.g. BTC-USDC (optional)" style={{ flex: "1 1 260px", minWidth: 0, background: "#080a08", color: "#f3f7f1", border: "1px solid #344033", borderRadius: 8, padding: 12 }} />
-          <button onClick={scan} disabled={loading} style={{ background: "#b8f34a", color: "#10150b", border: 0, borderRadius: 8, padding: "0 18px", fontWeight: 800, cursor: "pointer" }}>{loading ? "Scanning…" : "Find positions"}</button>
-        </div>
-        {error && <p style={{ color: "#ff9292", fontSize: 12 }}>{error}</p>}
-        {scanNote && <p style={muted}>{scanNote}</p>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 20 }}>
+        {[
+          ["WATCHED TRADERS", String(watchlist.length), "Saved in this browser"],
+          ["OPEN POSITIONS", String(allPositions.length), "Across watched wallets"],
+          ["TOTAL EXPOSURE", money(totalExposure), `Long ${money(longExposure)} · Short ${money(shortExposure)}`],
+          ["UNREALIZED PNL", money(totalPnl), "Current open positions"],
+        ].map(([label, value, detail]) => <div key={label} style={{ ...panel, padding: 16 }}><div style={{ color: "#8e9a8c", fontSize: 10, letterSpacing: 1 }}>{label}</div><div style={{ fontSize: 24, fontWeight: 750, margin: "12px 0 6px", color: label === "UNREALIZED PNL" ? (totalPnl >= 0 ? lime : red) : "#f3f7f1", overflowWrap: "anywhere" }}>{value}</div><div style={muted}>{detail}</div></div>)}
+      </div>
+
+      <section style={{ ...panel, marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 14 }}><div><h2 style={{ margin: 0, fontSize: 18 }}>Watched traders</h2><p style={muted}>Ranked by current open-position exposure · auto-refresh every 30 seconds</p></div>{lastUpdated && <span style={muted}>Updated {new Date(lastUpdated).toLocaleTimeString()}</span>}</div>
+        {error && <p style={{ color: red, fontSize: 12 }}>{error}</p>}
+        {watchlist.length === 0 ? <p style={muted}>Add a wallet below or use position discovery to find traders to follow.</p> : <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}><thead><tr>{["#","TRADER","OPEN POSITIONS","EXPOSURE","UNREALIZED PNL","STATUS"].map(x => <th key={x} style={{ padding: 10, color: "#8e9a8c", fontSize: 10 }}>{x}</th>)}</tr></thead><tbody>{traderRows.map((s, i) => <tr key={s.wallet}><td style={cell}>{i + 1}</td><td style={cell}><a href={`/traders/${s.wallet}`} style={{ color: lime }}>{short(s.wallet)}</a></td><td style={cell}>{s.positions.length}</td><td style={cell}>{money(s.exposure)}</td><td style={{ ...cell, color: s.pnl >= 0 ? lime : red }}>{money(s.pnl)}</td><td style={cell}>{s.error ? <span style={{ color: red }}>Unavailable</span> : s.positions.length ? <span style={{ color: lime }}>In position</span> : <span style={{ color: "#8e9a8c" }}>No open positions</span>}</td></tr>)}</tbody></table></div>}
       </section>
 
-      <section style={{ ...card, marginBottom: 24 }}>
-        <h2 style={{ margin: "0 0 8px", fontSize: 19 }}>Position results <span style={{ color: "#b8f34a" }}>({positions.length})</span></h2>
-        {loading ? <p style={muted}>Checking indexed wallets against TxFlow testnet…</p> : positions.length === 0 ? <p style={muted}>Run a scan to find currently open positions.</p> : <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}><thead><tr>{["Trader","Market","Direction","Size","Entry","Mark","Position value","Unrealized PnL",""].map(x => <th key={x} style={{ padding: 10, color: "#8e9a8c", fontSize: 10 }}>{x}</th>)}</tr></thead><tbody>{positions.map((p,i) => <tr key={p.wallet+p.coin+i} style={{ borderTop: "1px solid #252d25", fontSize: 12 }}><td style={{ padding: 10 }}><a href={`/traders/${p.wallet}`} style={{ color: "#b8f34a" }}>{short(p.wallet)}</a></td><td style={{ padding: 10 }}>{p.coin}</td><td style={{ padding: 10, color: p.direction === "Long" ? "#b8f34a" : "#ff9292" }}>{p.direction}</td><td style={{ padding: 10 }}>{p.size.toLocaleString()}</td><td style={{ padding: 10 }}>{p.entryPrice}</td><td style={{ padding: 10 }}>{p.markPrice}</td><td style={{ padding: 10 }}>{money(p.positionValue)}</td><td style={{ padding: 10, color: p.unrealizedPnl >= 0 ? "#b8f34a" : "#ff9292" }}>{money(p.unrealizedPnl)}</td><td style={{ padding: 10 }}><button onClick={() => !watchlist.includes(p.wallet) && saveWatchlist([...watchlist,p.wallet])} style={{ background: "#1a2410", border: "1px solid #526d2b", color: "#b8f34a", borderRadius: 6, padding: "6px 9px", cursor: "pointer" }}>{watchlist.includes(p.wallet) ? "Saved" : "Watch"}</button></td></tr>)}</tbody></table></div>}
+      <section style={{ ...panel, marginBottom: 20 }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Open positions across watchlist</h2><p style={muted}>Position size changes are highlighted against the previous successful refresh.</p>
+        {loading && snapshots.length === 0 ? <p style={muted}>Loading watched traders…</p> : allPositions.length === 0 ? <p style={muted}>No open positions found for the current watchlist.</p> : <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}><thead><tr>{["TRADER","MARKET","SIDE","SIZE","ENTRY","MARK","EXPOSURE","UNREALIZED PNL","CHANGE"].map(x => <th key={x} style={{ padding: 10, color: "#8e9a8c", fontSize: 10 }}>{x}</th>)}</tr></thead><tbody>{allPositions.sort((a,b) => Math.abs(b.positionValue)-Math.abs(a.positionValue)).map((p, i) => { const old = previous[`${p.wallet}:${p.coin}`]; const delta = old === undefined ? null : Math.abs(p.positionValue) - Math.abs(old); return <tr key={p.wallet+p.coin+i}><td style={cell}><a href={`/traders/${p.wallet}`} style={{ color: lime }}>{short(p.wallet)}</a></td><td style={cell}>{p.coin}</td><td style={{ ...cell, color: p.direction === "Long" ? lime : red }}>{p.direction}</td><td style={cell}>{number(p.size)}</td><td style={cell}>{number(p.entryPrice)}</td><td style={cell}>{number(p.markPrice)}</td><td style={cell}>{money(Math.abs(p.positionValue))}</td><td style={{ ...cell, color: p.unrealizedPnl >= 0 ? lime : red }}>{money(p.unrealizedPnl)}</td><td style={{ ...cell, color: delta === null ? "#8e9a8c" : delta >= 0 ? lime : red }}>{delta === null ? "New" : `${delta >= 0 ? "+" : ""}${money(delta)}`}</td></tr>; })}</tbody></table></div>}
       </section>
 
-      <section style={card}>
-        <h2 style={{ margin: "0 0 8px", fontSize: 19 }}>My trader watchlist <span style={{ color: "#b8f34a" }}>({watchlist.length})</span></h2>
-        <p style={muted}>Saved in this browser only. Add a wallet manually or save traders from discovery results.</p>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-          <input value={walletInput} onChange={e => setWalletInput(e.target.value)} placeholder="0x wallet address" style={{ flex: "1 1 300px", minWidth: 0, background: "#080a08", color: "#f3f7f1", border: "1px solid #344033", borderRadius: 8, padding: 12 }} />
-          <button onClick={addWallet} style={{ background: "#1a2410", border: "1px solid #526d2b", color: "#b8f34a", borderRadius: 8, padding: "0 16px", cursor: "pointer" }}>Add wallet</button>
-        </div>
-        {watchlist.length === 0 ? <p style={muted}>Your watchlist is empty.</p> : <div style={{ display: "grid", gap: 8 }}>{watchlist.map(wallet => <div key={wallet} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: 10, border: "1px solid #252d25", borderRadius: 8 }}><a href={`/traders/${wallet}`} style={{ color: "#b8f34a", fontSize: 12 }}>{wallet}</a><button onClick={() => saveWatchlist(watchlist.filter(w => w !== wallet))} style={{ color: "#ff9292", background: "transparent", border: "1px solid #543333", borderRadius: 6, padding: "6px 9px", cursor: "pointer" }}>Remove</button></div>)}</div>}
+      <section style={{ ...panel, marginBottom: 20 }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Latest trading activity</h2><p style={muted}>Most recent fills returned by TxFlow for watched wallets.</p>
+        {allFills.length === 0 ? <p style={muted}>No recent fills available for the watchlist.</p> : <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}><thead><tr>{["TIME","TRADER","MARKET","ACTION","SIZE","PRICE","REALIZED PNL"].map(x => <th key={x} style={{ padding: 10, color: "#8e9a8c", fontSize: 10 }}>{x}</th>)}</tr></thead><tbody>{allFills.map((f, i) => <tr key={f.wallet+f.id+i}><td style={cell}>{f.time ? new Date(f.time).toLocaleString() : "—"}</td><td style={cell}><a href={`/traders/${f.wallet}`} style={{ color: lime }}>{short(f.wallet)}</a></td><td style={cell}>{f.coin}</td><td style={cell}>{f.direction || f.side}</td><td style={cell}>{number(f.size)}</td><td style={cell}>{number(f.price)}</td><td style={{ ...cell, color: f.closedPnl >= 0 ? lime : red }}>{money(f.closedPnl)}</td></tr>)}</tbody></table></div>}
       </section>
-      <p style={{ ...muted, marginTop: 20 }}>Read-only analytics. No wallet connection or trade execution. Position discovery is limited to indexed wallets and does not represent every TxFlow trader.</p>
+
+      <section style={{ ...panel, marginBottom: 20 }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Manage watchlist</h2><p style={muted}>Wallets are saved in this browser only. You can also add a trader from their profile or from discovery.</p>
+        <div style={{ display: "flex", gap: 9, flexWrap: "wrap", margin: "14px 0" }}><input value={walletInput} onChange={e => setWalletInput(e.target.value)} placeholder="Paste 0x wallet address" style={{ ...inputStyle, flex: "1 1 300px" }} /><button onClick={addWallet} style={{ background: lime, color: "#10150b", border: 0, borderRadius: 8, padding: "0 18px", fontWeight: 800 }}>Add trader</button></div>
+        {watchlist.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{watchlist.map(w => <div key={w} style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #30392a", borderRadius: 8, padding: "7px 9px", fontSize: 11 }}><a href={`/traders/${w}`} style={{ color: lime }}>{short(w)}</a><button onClick={() => saveWatchlist(watchlist.filter(x => x !== w))} aria-label={`Remove ${w}`} style={{ background: "transparent", border: 0, color: red, cursor: "pointer" }}>×</button></div>)}</div>}
+      </section>
+
+      <section style={panel}>
+        <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Discover new traders</h2><p style={muted}>Scan up to 20 wallets from the existing trader index. This is not a complete market-wide scan.</p>
+        <div style={{ display: "flex", gap: 9, flexWrap: "wrap", margin: "14px 0" }}><input value={coin} onChange={e => setCoin(e.target.value)} placeholder="Filter by market e.g. BTC-USDC (optional)" style={{ ...inputStyle, flex: "1 1 280px" }} /><button onClick={findPositions} disabled={discovering} style={{ background: "#1a2410", border: "1px solid #526d2b", color: lime, borderRadius: 8, padding: "0 16px" }}>{discovering ? "Scanning…" : "Find positions"}</button></div>
+        {discoveryNote && <p style={muted}>{discoveryNote}</p>}
+        {discovery.length > 0 && <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}><thead><tr>{["TRADER","MARKET","SIDE","EXPOSURE","UNREALIZED PNL",""].map(x => <th key={x} style={{ padding: 10, color: "#8e9a8c", fontSize: 10 }}>{x}</th>)}</tr></thead><tbody>{discovery.map((p,i) => <tr key={p.wallet+p.coin+i}><td style={cell}><a href={`/traders/${p.wallet}`} style={{ color: lime }}>{short(p.wallet)}</a></td><td style={cell}>{p.coin}</td><td style={{ ...cell, color: p.direction === "Long" ? lime : red }}>{p.direction}</td><td style={cell}>{money(Math.abs(p.positionValue))}</td><td style={{ ...cell, color: p.unrealizedPnl >= 0 ? lime : red }}>{money(p.unrealizedPnl)}</td><td style={cell}><button onClick={() => saveWatchlist([...watchlist,p.wallet])} disabled={watchlist.includes(p.wallet)} style={{ background: "#1a2410", border: "1px solid #526d2b", color: lime, borderRadius: 6, padding: "6px 9px" }}>{watchlist.includes(p.wallet) ? "Added" : "Watch"}</button></td></tr>)}</tbody></table></div>}
+      </section>
+      <p style={{ ...muted, marginTop: 18 }}>Read-only analytics · Data is from TxFlow testnet APIs · Watchlist is stored locally in this browser · No wallet connection or trade execution.</p>
     </main>
   );
 }
