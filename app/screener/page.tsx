@@ -158,7 +158,7 @@ export default function ScreenerPage() {
   const labelStyle: React.CSSProperties = { display: "grid", gap: 6, color: MUTED, fontSize: 10 };
 
   return (
-    <main style={{ maxWidth: 1440, margin: "0 auto", padding: "32px 22px 70px", color: "#f2f5ed" }}>
+    <main className="market-screener-page">
       <div style={{ marginBottom: 25 }}>
         <div style={{ color: LIME, fontSize: 10, fontWeight: 800, letterSpacing: 2 }}>TXFLOW / MARKET TOOLS</div>
         <h1 style={{ margin: "10px 0 8px", fontSize: "clamp(30px,4vw,42px)", letterSpacing: "-1.5px" }}>Market <span style={{ color: LIME }}>Screener</span></h1>
