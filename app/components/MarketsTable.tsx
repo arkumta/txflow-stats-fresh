@@ -93,7 +93,7 @@ export default function MarketsTable() {
         Number(b.data?.dayNtlVlm || 0) -
         Number(a.data?.dayNtlVlm || 0)
     )
-    .slice(0, 10);
+    .slice(0, 5);
 
   function formatPrice(value?: number | string) {
     const number = Number(value);
@@ -150,7 +150,7 @@ export default function MarketsTable() {
       >
         <div>
           <h2 style={{ fontSize: "22px", fontWeight: 600, margin: 0 }}>
-            Top 10 Markets
+            Top 5 Markets
           </h2>
           <p style={{ color: "#777", fontSize: "13px", margin: "7px 0 0" }}>
             Ranked by 24-hour trading volume
