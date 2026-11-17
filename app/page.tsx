@@ -214,7 +214,16 @@ export default function Home() {
 
   return (
     <main className="home-page">
-      <DataRain />
+      <DataRain
+        count={1500}
+        flowSpeed={0.28}
+        autopilot={false}
+        palette={{
+          calm: "#718C4A",
+          mid: "#9DBB5B",
+          hot: "#C5E88A",
+        }}
+      />
       {/* The duplicate Navbar has been removed.
           app/layout.tsx already renders the shared Navbar. */}
 
