@@ -2338,3 +2338,71 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
     border-radius: 12px !important;
   }
 }
+
+
+/* Traders leaderboard — unified charcoal and lime presentation */
+.traders-leaderboard-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 30px clamp(16px, 3vw, 28px) 64px;
+  color: #f2f4ed;
+  background: transparent;
+}
+.traders-leaderboard-page > div {
+  width: 100%;
+  max-width: 1440px !important;
+  margin: 0 auto;
+}
+.traders-leaderboard-page h1 {
+  color: #f2f4ed !important;
+  font-weight: 760 !important;
+  line-height: 1.08 !important;
+}
+.traders-leaderboard-page section {
+  border: 1px solid rgba(151,177,112,.17) !important;
+  border-radius: 14px !important;
+  background: #10150e !important;
+  box-shadow: none !important;
+}
+.traders-leaderboard-page input,
+.traders-leaderboard-page select {
+  min-height: 42px;
+  border: 1px solid #35422a !important;
+  border-radius: 9px !important;
+  background: #0b0f09 !important;
+  color: #edf2e6 !important;
+}
+.traders-leaderboard-page input::placeholder { color: #77816d; }
+.traders-leaderboard-page button {
+  transition: border-color .16s ease, background .16s ease, filter .16s ease;
+}
+.traders-leaderboard-page button:hover:not(:disabled) { filter: brightness(1.08); }
+.traders-leaderboard-page section > div[style*="borderBottom"] {
+  border-bottom-color: rgba(151,177,112,.16) !important;
+}
+.traders-leaderboard-page table {
+  width: 100%;
+  background: #10150e !important;
+  font-variant-numeric: tabular-nums;
+}
+.traders-leaderboard-page thead,
+.traders-leaderboard-page thead tr,
+.traders-leaderboard-page thead th {
+  background: #171e12 !important;
+  color: #a9b995 !important;
+}
+.traders-leaderboard-page th {
+  border-color: rgba(151,177,112,.16) !important;
+}
+.traders-leaderboard-page tbody tr {
+  border-color: rgba(151,177,112,.13) !important;
+}
+.traders-leaderboard-page tbody tr:hover {
+  background: rgba(197,246,107,.045) !important;
+}
+.traders-leaderboard-page tbody td { white-space: nowrap; }
+.traders-leaderboard-page tbody a:hover { color: #c5f66b !important; }
+@media (max-width: 640px) {
+  .traders-leaderboard-page { padding: 24px 14px 48px; }
+  .traders-leaderboard-page section { border-radius: 12px !important; }
+}
