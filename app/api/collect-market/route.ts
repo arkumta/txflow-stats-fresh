@@ -86,7 +86,17 @@ async function collectOneMarket(coin: string, recordedAt: string): Promise<Snaps
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get("authorization");
+
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return Response.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401, headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
   try {
     const metadata = await postTxflow({ type: "perpMeta" });
 
