@@ -1673,3 +1673,75 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible {
 @media (prefers-reduced-motion:reduce) {
   .home-stat-card,.txflow-nav-link,.txflow-join-button { transition:none !important; }
 }
+
+/* Homepage surfaces: flatter, quieter and more consistent */
+.home-price-card,
+.home-stat-card,
+.home-activity-panel,
+.home-shell section[style*="marginTop"],
+.home-shell div[style*="marginTop"],
+.home-shell section[style*="background: #0d0d0d"],
+.home-shell div[style*="background: #0d0d0d"],
+.home-shell section[style*="background: rgb(13, 13, 13)"],
+.home-shell div[style*="background: rgb(13, 13, 13)"] {
+  background: #11111b !important;
+  border-color: #29283a !important;
+  box-shadow: none !important;
+}
+
+.home-price-card::before {
+  opacity: 0 !important;
+}
+
+.home-stat-card {
+  border-radius: 12px !important;
+}
+
+.home-stat-card:hover {
+  background: #151421 !important;
+  border-color: rgba(155,124,255,.38) !important;
+}
+
+.home-stat-featured {
+  background: #171426 !important;
+  border-color: rgba(155,124,255,.34) !important;
+}
+
+.home-activity-panel {
+  border-radius: 13px !important;
+}
+
+.home-shell table,
+.home-traders-table {
+  background: transparent !important;
+}
+
+.home-shell thead,
+.home-traders-table thead {
+  background: #151420 !important;
+}
+
+.home-shell th,
+.home-traders-table th {
+  background: transparent !important;
+  color: #a59db8 !important;
+}
+
+.home-shell td,
+.home-traders-table td {
+  background: transparent !important;
+}
+
+.home-shell tbody tr:hover,
+.home-traders-table tbody tr:hover {
+  background: rgba(155,124,255,.045) !important;
+}
+
+.home-shell [style*="background: #0d0d0d"] {
+  background: #11111b !important;
+}
+
+@media (max-width:640px) {
+  .home-stat-card { border-radius: 11px !important; }
+}
+
