@@ -2908,3 +2908,45 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
   .txflow-wallet-search input { min-width: 0; }
   .txflow-join-button { width: 100%; min-height: 40px; }
 }
+
+
+/* Market price chart — TradingView canvas and controls */
+.market-detail-page .price-chart-card {
+  margin-top: 28px !important;
+  padding: 20px !important;
+  border: 1px solid rgba(151,177,112,.18) !important;
+  border-radius: 14px !important;
+  background: #10150e !important;
+  box-shadow: none !important;
+}
+.market-detail-page .price-chart-card h2 {
+  color: #f2f4ed !important;
+  font-size: 22px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.025em;
+}
+.market-detail-page .price-chart-card button {
+  min-height: 34px;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.market-detail-page .price-chart-card button:hover {
+  border-color: rgba(197,246,107,.55) !important;
+}
+.market-detail-page .price-chart-canvas {
+  height: 440px !important;
+  overflow: hidden;
+  border-radius: 9px;
+}
+@media (max-width: 640px) {
+  .market-detail-page .price-chart-card {
+    padding: 14px !important;
+    margin-top: 22px !important;
+  }
+  .market-detail-page .price-chart-canvas {
+    height: 340px !important;
+  }
+}
