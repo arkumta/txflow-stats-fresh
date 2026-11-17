@@ -2206,3 +2206,53 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
   .leaderboard-page { padding: 26px 14px 52px; }
   .leaderboard-header { margin-top: 22px; }
 }
+
+
+/* Markets directory and detail pages — shared Txflow surface system */
+.markets-directory-page,
+.market-detail-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 30px 0 70px;
+  color: #f2f4ed;
+  background: transparent;
+}
+.markets-directory-page > div,
+.market-detail-page > div {
+  max-width: 1440px;
+  width: calc(100% - 40px);
+  margin: 0 auto;
+}
+.markets-directory-page section,
+.market-detail-page section {
+  border-color: rgba(151,177,112,.16) !important;
+}
+.markets-directory-page section[style*="background"],
+.market-detail-page section[style*="background"] {
+  background: #10150e !important;
+}
+.markets-directory-page table,
+.market-detail-page table {
+  background: #10150e !important;
+}
+.markets-directory-page thead,
+.markets-directory-page thead th,
+.market-detail-page thead,
+.market-detail-page thead th {
+  background: #171e12 !important;
+  color: #a9b995 !important;
+}
+.markets-directory-page tbody tr,
+.market-detail-page tbody tr {
+  border-color: rgba(151,177,112,.16) !important;
+}
+.markets-directory-page tbody tr:hover,
+.market-detail-page tbody tr:hover {
+  background: rgba(197,246,107,.045) !important;
+}
+@media (max-width: 640px) {
+  .markets-directory-page > div,
+  .market-detail-page > div { width: calc(100% - 28px); }
+  .markets-directory-page,
+  .market-detail-page { padding-top: 24px; }
+}
