@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 type Market = {
@@ -472,10 +472,15 @@ export default function MarketsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const requestInFlight = useRef(false);
+  const requestVersion = useRef(0);
 
-  const loadMarkets = useCallback(async (manual = false) => {
-    if (manual) setRefreshing(true);
-    setError("");
+  const loadMarkets = useCallback(async (_manual = false) => {
+    if (requestInFlight.current) return;
+
+    requestInFlight.current = true;
+    const currentRequest = ++requestVersion.current;
+    if (lastUpdated) setRefreshing(true);
 
     try {
       const [listResponse, dataResponse] = await Promise.all([
@@ -496,20 +501,28 @@ export default function MarketsPage() {
         throw new Error("The market API returned an unexpected response.");
       }
 
-      setMarkets(listResult);
-      setMarketData(dataResult);
-      setLastUpdated(new Date());
+      if (currentRequest === requestVersion.current) {
+        setMarkets(listResult);
+        setMarketData(dataResult);
+        setLastUpdated(new Date());
+        setError("");
+      }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to load markets. Please try again."
-      );
+      if (currentRequest === requestVersion.current) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load markets. Please try again."
+        );
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      requestInFlight.current = false;
+      if (currentRequest === requestVersion.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, []);
+  }, [lastUpdated]);
 
   useEffect(() => {
     void loadMarkets();
@@ -518,7 +531,10 @@ export default function MarketsPage() {
       void loadMarkets();
     }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      requestVersion.current += 1;
+    };
   }, [loadMarkets]);
 
   const dataByCoin = useMemo(
@@ -1025,7 +1041,7 @@ const topNegativeFunding = useMemo(
                 fontSize: 13,
               }}
             >
-              {error}
+              {lastUpdated ? "Refresh failed; showing the last successful market data. " : ""}{error}
               <button
                 type="button"
                 onClick={() => void loadMarkets(true)}
@@ -1233,7 +1249,7 @@ const topNegativeFunding = useMemo(
               Values come from the existing Txflow API. Missing values are shown as dashes.
             </span>
             <span>
-              {lastUpdated
+              {refreshing ? "Refreshing market data…" : lastUpdated
                 ? `Updated ${lastUpdated.toLocaleTimeString()}`
                 : "Waiting for market data"}
               {" · "}
