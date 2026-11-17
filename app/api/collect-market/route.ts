@@ -1,9 +1,9 @@
 import { supabase } from "../../lib/supabase";
 
 const TXFLOW_INFO_URL = "https://rpc.txflow-testnet.xyz/info";
-const CONCURRENCY = 4;
-const BATCH_PAUSE_MS = 150;
 const REQUEST_TIMEOUT_MS = 12_000;
+const RATE_LIMIT_RETRIES = 5;
+const MIN_REQUEST_GAP_MS = 500;
 
 type MarketMeta = {
   name: string;
@@ -32,21 +32,36 @@ function numericOrNull(value: unknown): number | null {
 }
 
 async function postTxflow(body: Record<string, unknown>) {
-  const response = await fetch(TXFLOW_INFO_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    cache: "no-store",
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
+  for (let attempt = 0; attempt <= RATE_LIMIT_RETRIES; attempt += 1) {
+    const response = await fetch(TXFLOW_INFO_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
 
-  if (!response.ok) {
-    throw new Error(`Txflow returned HTTP ${response.status}`);
+    if (response.status === 429 && attempt < RATE_LIMIT_RETRIES) {
+      const retryAfter = response.headers.get("retry-after");
+      const retryAfterSeconds = retryAfter ? Number(retryAfter) : NaN;
+      const waitMs = Number.isFinite(retryAfterSeconds)
+        ? Math.max(500, retryAfterSeconds * 1000)
+        : Math.min(1_000 * 2 ** attempt, 15_000);
+
+      await sleep(waitMs);
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Txflow returned HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data?.message) throw new Error(data.message);
+    return data;
   }
 
-  const data = await response.json();
-  if (data?.message) throw new Error(data.message);
-  return data;
+  throw new Error("Txflow rate limit retries exhausted.");
 }
 
 async function collectOneMarket(coin: string, recordedAt: string): Promise<Snapshot> {
@@ -97,28 +112,24 @@ export async function GET() {
     const snapshots: Snapshot[] = [];
     const failures: { coin: string; error: string }[] = [];
 
-    for (let i = 0; i < activeMarkets.length; i += CONCURRENCY) {
-      const batch = activeMarkets.slice(i, i + CONCURRENCY);
-      const settled = await Promise.allSettled(
-        batch.map((market) => collectOneMarket(market.name, recordedAt))
-      );
+    // Query one market at a time to avoid bursts that trigger Txflow HTTP 429s.
+    for (let i = 0; i < activeMarkets.length; i += 1) {
+      const coin = activeMarkets[i].name;
 
-      settled.forEach((result, index) => {
-        if (result.status === "fulfilled") {
-          snapshots.push(result.value);
-        } else {
-          failures.push({
-            coin: batch[index].name,
-            error:
-              result.reason instanceof Error
-                ? result.reason.message
-                : "Unknown market collection error",
-          });
-        }
-      });
+      try {
+        snapshots.push(await collectOneMarket(coin, recordedAt));
+      } catch (error) {
+        failures.push({
+          coin,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unknown market collection error",
+        });
+      }
 
-      if (i + CONCURRENCY < activeMarkets.length) {
-        await sleep(BATCH_PAUSE_MS);
+      if (i + 1 < activeMarkets.length) {
+        await sleep(MIN_REQUEST_GAP_MS);
       }
     }
 
