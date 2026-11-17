@@ -9,6 +9,7 @@ import TraderPerformance from "./TraderPerformance";
 import TraderMarketPerformance from "./TraderMarketPerformance";
 import TraderBehavior from "./TraderBehavior";
 import TraderSessionAnalysis from "./TraderSessionAnalysis";
+import TraderIntelligence from "../../components/TraderIntelligence";
 
 type TraderStats = {
   wallet: string;
@@ -551,6 +552,20 @@ async function loadTrader() {
                     </table>
                   </div>
                 )}
+              </div>
+            </section>
+
+            <section className="content-section">
+              <div className="section-heading">
+                <div>
+                  <div className="section-kicker">LIVE TRADER INTELLIGENCE</div>
+                  <h2>Positions & position history</h2>
+                  <p>Current open exposure and exchange-reported fills</p>
+                </div>
+                <span className="section-tag">TESTNET · LIVE REFRESH</span>
+              </div>
+              <div className="content-card" style={{ padding: 18 }}>
+                <TraderIntelligence wallet={wallet} />
               </div>
             </section>
 
