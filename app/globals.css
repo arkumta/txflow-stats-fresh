@@ -2406,3 +2406,60 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
   .traders-leaderboard-page { padding: 24px 14px 48px; }
   .traders-leaderboard-page section { border-radius: 12px !important; }
 }
+
+
+/* Trader profile — finish alignment with the shared Txflow dashboard */
+.profile-page {
+  background: #090b08 !important;
+  background-image: radial-gradient(ellipse at 50% -15%, rgba(197,246,107,.055), transparent 42%) !important;
+}
+.profile-shell { max-width: 1320px !important; }
+.wallet-panel,
+.metric-card,
+.content-card,
+.state-panel {
+  background: #10150e !important;
+  border-color: rgba(151,177,112,.17) !important;
+  box-shadow: none !important;
+}
+.metric-highlight {
+  background: #151b11 !important;
+  border-color: rgba(197,246,107,.25) !important;
+}
+.profile-status,
+.section-tag {
+  background: #141a10 !important;
+  border-color: rgba(151,177,112,.18) !important;
+}
+.profile-page .section-heading h2,
+.profile-page .heading-copy h1,
+.profile-page .state-panel h1 { color: #f2f4ed; }
+.profile-page .section-kicker,
+.profile-page .eyebrow { color: #c5f66b; }
+.profile-page th {
+  background: #171e12 !important;
+  color: #a9b995 !important;
+}
+.profile-page td {
+  border-color: rgba(151,177,112,.14) !important;
+}
+.profile-page tbody tr:hover {
+  background: rgba(197,246,107,.04) !important;
+}
+.profile-page .copy-button,
+.profile-page .primary-button {
+  background: rgba(197,246,107,.08) !important;
+  border-color: rgba(197,246,107,.3) !important;
+  color: #c5f66b !important;
+}
+.profile-page .copy-button:hover,
+.profile-page .primary-button:hover {
+  background: rgba(197,246,107,.14) !important;
+  border-color: #c5f66b !important;
+}
+.profile-page .profile-footer { border-top-color: rgba(151,177,112,.16) !important; }
+@media (max-width: 640px) {
+  .profile-page { padding-left: 14px !important; padding-right: 14px !important; }
+  .profile-shell { min-width: 0; }
+  .profile-page .section-heading { flex-wrap: wrap; }
+}
