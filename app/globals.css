@@ -2681,3 +2681,108 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
     min-width: 560px;
   }
 }
+
+
+/* Trader comparison — align legacy comparison UI with the current Txflow theme */
+.comparison-page {
+  background: #090b08 !important;
+  color: #f2f4ed !important;
+  font-family: var(--font-geist-sans), Arial, sans-serif !important;
+}
+.comparison-page .back-link { color: #929b88 !important; }
+.comparison-page .back-link:hover,
+.comparison-page .profile-link:hover { color: #e0ffad !important; }
+.comparison-page .eyebrow,
+.comparison-page .section-kicker,
+.comparison-page .comparison-header h1 span,
+.comparison-page .method-note strong { color: #c5f66b !important; }
+.comparison-page .live-dot,
+.comparison-page .trader-indicator { background: #c5f66b; }
+.comparison-page .comparison-header h1 {
+  color: #f2f4ed;
+  font-weight: 780;
+  letter-spacing: -.045em;
+}
+.comparison-page .comparison-header p,
+.comparison-page .section-heading p,
+.comparison-page .input-note,
+.comparison-page .method-note { color: #929b88; }
+.comparison-page .compare-input-panel,
+.comparison-page .result-card,
+.comparison-page .chart-panel,
+.comparison-page .table-panel,
+.comparison-page .method-note {
+  border-color: rgba(151,177,112,.18) !important;
+  background: #10150e !important;
+  box-shadow: none !important;
+}
+.comparison-page .wallet-input-card {
+  border-color: #35422a !important;
+  background: #0b0f09 !important;
+}
+.comparison-page .wallet-input-card input {
+  color: #edf2e6 !important;
+}
+.comparison-page .wallet-input-card input:focus {
+  outline: 1px solid rgba(197,246,107,.55);
+  outline-offset: 3px;
+}
+.comparison-page .period-tag {
+  border-color: rgba(197,246,107,.22) !important;
+  background: rgba(197,246,107,.055);
+  color: #c5f66b !important;
+}
+.comparison-page .compare-button {
+  border-color: #c5f66b !important;
+  background: #c5f66b !important;
+  color: #11160c !important;
+}
+.comparison-page .compare-button:hover:not(:disabled) {
+  background: #dcff9b !important;
+}
+.comparison-page .leader-panel {
+  border-color: rgba(197,246,107,.25) !important;
+  background: linear-gradient(110deg, rgba(197,246,107,.07), #10150e) !important;
+}
+.comparison-page .leader-panel strong,
+.comparison-page .main-pnl.positive { color: #c5f66b !important; }
+.comparison-page .main-pnl.negative { color: #ff8585 !important; }
+.comparison-page .result-metrics { border-top-color: rgba(151,177,112,.16) !important; }
+.comparison-page .metric-label,
+.comparison-page .metric-caption { color: #929b88 !important; }
+.comparison-page .metric-value,
+.comparison-page .result-wallet { color: #e4eadc !important; }
+.comparison-page .profile-link,
+.comparison-page .comparison-footer a { color: #c5e99a !important; }
+.comparison-page .table-panel th {
+  background: #171e12 !important;
+  color: #a9b995 !important;
+}
+.comparison-page .table-panel td {
+  color: #d6dfcc !important;
+  border-bottom-color: rgba(151,177,112,.14) !important;
+}
+.comparison-page .table-panel tbody tr:hover {
+  background: rgba(197,246,107,.045) !important;
+}
+.comparison-page .comparison-footer {
+  border-top-color: rgba(151,177,112,.16) !important;
+  color: #929b88 !important;
+}
+.comparison-page .footer-mark {
+  background: #c5f66b !important;
+  color: #11160c !important;
+}
+.comparison-page .error-message { color: #ff8585 !important; }
+.comparison-page .loading-spinner {
+  border-color: #35422a !important;
+  border-top-color: #c5f66b !important;
+}
+@media (max-width: 650px) {
+  .comparison-page { padding: 24px 14px 42px !important; }
+  .comparison-page .comparison-header { margin-top: 26px !important; }
+  .comparison-page .compare-input-panel,
+  .comparison-page .result-card { border-radius: 12px !important; }
+  .comparison-page .leader-panel { padding: 18px !important; }
+  .comparison-page .comparison-footer { flex-wrap: wrap; }
+}
