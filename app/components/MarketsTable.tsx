@@ -135,7 +135,7 @@ export default function MarketsTable() {
         background: "#0d0d0d",
         border: "1px solid #222",
         borderRadius: "12px",
-        padding: "24px",
+        padding: "clamp(18px, 2.4vw, 28px)",
       }}
     >
       <div
@@ -197,8 +197,9 @@ export default function MarketsTable() {
                   padding: "12px 0",
                   borderBottom: "1px solid #333",
                   color: "#777",
-                  fontSize: "11px",
-                  letterSpacing: ".06em",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  letterSpacing: ".07em",
                 }}
               >
                 <span>MARKET</span>
@@ -216,12 +217,12 @@ export default function MarketsTable() {
                     gridTemplateColumns: "1.5fr 1.2fr 1.2fr 1.2fr 1fr",
                     gap: "16px",
                     alignItems: "center",
-                    padding: "16px 0",
+                    padding: "18px 0",
                     borderBottom:
                       index === sortedMarkets.length - 1
                         ? "none"
                         : "1px solid #1f1f1f",
-                    fontSize: "13px",
+                    fontSize: "14px",
                   }}
                 >
                   <a
