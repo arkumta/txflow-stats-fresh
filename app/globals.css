@@ -2256,3 +2256,85 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
   .markets-directory-page,
   .market-detail-page { padding-top: 24px; }
 }
+
+
+/* Market screener — consistent Txflow surfaces and responsive layout */
+.market-screener-page {
+  width: 100%;
+  max-width: 1480px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 34px clamp(16px, 3vw, 28px) 72px;
+  color: #f2f4ed;
+}
+.market-screener-page > div:first-child h1 {
+  color: #f2f4ed !important;
+  font-weight: 760;
+  line-height: 1.12;
+}
+.market-screener-page > div:first-child p {
+  max-width: 720px;
+  line-height: 1.7;
+}
+.market-screener-page section {
+  border-color: rgba(151,177,112,.17) !important;
+  background: #10150e !important;
+  box-shadow: none !important;
+}
+.market-screener-page section > div:first-child {
+  border-color: rgba(151,177,112,.16) !important;
+}
+.market-screener-page input:not([type="checkbox"]),
+.market-screener-page select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #35422a !important;
+  border-radius: 8px !important;
+  background: #0b0f09 !important;
+  color: #edf2e6 !important;
+}
+.market-screener-page input::placeholder {
+  color: #77816d;
+}
+.market-screener-page input[type="checkbox"] {
+  accent-color: #c5f66b;
+}
+.market-screener-page button {
+  transition: border-color .16s ease, background .16s ease, color .16s ease;
+}
+.market-screener-page button:hover:not(:disabled) {
+  border-color: rgba(197,246,107,.42) !important;
+  background-color: #192114 !important;
+}
+.market-screener-page table {
+  background: #10150e !important;
+  font-variant-numeric: tabular-nums;
+}
+.market-screener-page thead,
+.market-screener-page thead th {
+  background: #171e12 !important;
+  color: #a9b995 !important;
+}
+.market-screener-page tbody tr {
+  border-color: rgba(151,177,112,.14) !important;
+}
+.market-screener-page tbody tr:hover {
+  background: rgba(197,246,107,.045) !important;
+}
+.market-screener-page tbody td {
+  white-space: nowrap;
+}
+.market-screener-page tbody td:first-child a:hover {
+  color: #c5f66b !important;
+}
+@media (max-width: 640px) {
+  .market-screener-page {
+    padding: 26px 14px 54px;
+  }
+  .market-screener-page > div:first-child {
+    margin-bottom: 20px !important;
+  }
+  .market-screener-page section {
+    border-radius: 12px !important;
+  }
+}
