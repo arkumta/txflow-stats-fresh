@@ -191,6 +191,33 @@ export default function TraderBehavior({
         </div>
       )}
 
+      {(() => {
+        const discipline = data.discipline_analysis;
+        const fills = data.total_fills_analyzed;
+        const variation = discipline?.daily_fill_coefficient_variation ?? null;
+        const sampleScore = Math.min(20, Math.round((fills / 100) * 20));
+        const consistencyScore = variation === null ? 0 : Math.max(0, Math.min(40, Math.round(40 / (1 + variation))));
+        const activityScore = Math.min(20, Math.round((discipline?.active_days ?? 0) / 30 * 20));
+        const timeScore = data.valid_time_fills > 0 ? Math.min(20, Math.round((data.valid_time_fills / Math.max(1, fills)) * 20)) : 0;
+        const score = Math.min(100, sampleScore + consistencyScore + activityScore + timeScore);
+        const tier = fills < 20 ? "Insufficient sample" : score >= 75 ? "Consistent activity" : score >= 50 ? "Moderate consistency" : "Variable activity";
+        return (
+          <div className="behavior-score-card">
+            <div className="score-top">
+              <div><span className="score-kicker">TRADER BEHAVIOR INDEX</span><h3>Activity consistency score</h3><p>A descriptive score based on observed trading frequency and data coverage — not a prediction of profitability or trading skill.</p></div>
+              <div className="score-value"><strong>{fills < 20 ? "—" : score}</strong><span>/ 100</span></div>
+            </div>
+            <div className="score-track"><div className="score-fill" style={{ width: `${fills < 20 ? 0 : score}%` }} /></div>
+            <div className="score-details">
+              <span><b>{tier}</b></span>
+              <span>{discipline?.active_days ?? 0} active days</span>
+              <span>{fills.toLocaleString("en-US")} fills analyzed</span>
+              <span>{variation === null ? "Consistency unavailable" : `Daily variation: ${variation.toFixed(2)}`}</span>
+            </div>
+            {fills < 20 && <div className="score-caution">At least 20 recorded fills are needed before displaying a score.</div>}
+          </div>
+        );
+      })()}
       <div className="stats-grid">
         <article className="stat-card">
           <span>Total trading volume</span>
@@ -414,6 +441,24 @@ export default function TraderBehavior({
           font-size: 10px;
         }
 
+        .behavior-score-card {
+          padding: 18px;
+          border: 1px solid rgba(184,243,74,.25);
+          border-radius: 14px;
+          background: linear-gradient(135deg, rgba(184,243,74,.09), #101410 65%);
+        }
+        .score-top { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+        .score-kicker { color:#b8f34a; font-size:9px; font-weight:800; letter-spacing:1.4px; }
+        .score-top h3 { margin:7px 0 5px; font-size:16px; }
+        .score-top p { max-width:650px; margin:0; color:#8e9a8c; font-size:10px; line-height:1.6; }
+        .score-value { flex:0 0 auto; display:flex; align-items:baseline; gap:4px; }
+        .score-value strong { color:#b8f34a; font-size:36px; letter-spacing:-1px; }
+        .score-value span { color:#8e9a8c; font-size:11px; }
+        .score-track { height:8px; margin-top:17px; overflow:hidden; border-radius:20px; background:#293126; }
+        .score-fill { height:100%; border-radius:20px; background:#b8f34a; transition:width .3s ease; }
+        .score-details { display:flex; flex-wrap:wrap; gap:9px 18px; margin-top:12px; color:#8e9a8c; font-size:10px; }
+        .score-details b { color:#dce8cd; }
+        .score-caution { margin-top:10px; color:#e7c58d; font-size:10px; }
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(5, minmax(0, 1fr));
