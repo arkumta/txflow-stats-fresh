@@ -12,24 +12,47 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Match the request format already used by this project's working trader-fill sync route.
+    const endTimeMs = Date.now();
+    const startTimeMs = endTimeMs - 365 * 24 * 60 * 60 * 1000;
     const response = await fetch(TXFLOW_INFO_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-version": "2026-08-16" },
-      body: JSON.stringify({ type: "userFills", user: wallet, accountType: "perp", limit, offset }),
+      body: JSON.stringify({ type: "userFills", user: wallet, startTimeMs, endTimeMs, offset, limit }),
       cache: "no-store",
       signal: AbortSignal.timeout(15000),
     });
 
+    const responseText = await response.text();
     if (!response.ok) {
+      console.error("TxFlow history HTTP error:", response.status, responseText.slice(0, 500));
       return Response.json({ success: false, error: "TxFlow history service is temporarily unavailable." }, { status: 502 });
     }
 
-    const result = await response.json();
-    if (result.success !== true || !Array.isArray(result.data?.data)) {
-      return Response.json({ success: false, error: "Unexpected response from TxFlow history service." }, { status: 502 });
+    let result: any;
+    try { result = JSON.parse(responseText); }
+    catch {
+      console.error("TxFlow history returned non-JSON:", responseText.slice(0, 500));
+      return Response.json({ success: false, error: "TxFlow returned an unreadable history response." }, { status: 502 });
     }
 
-    const fills = result.data.data
+    // The Info API normally wraps fills in data.data. Accept a direct data array too,
+    // since the provider has returned more than one response envelope across endpoints.
+    const rawFills = Array.isArray(result?.data?.data)
+      ? result.data.data
+      : Array.isArray(result?.data)
+        ? result.data
+        : null;
+
+    if (result?.success !== true || !rawFills) {
+      console.error("Unexpected TxFlow userFills response:", JSON.stringify(result).slice(0, 1000));
+      return Response.json({
+        success: false,
+        error: result?.message || result?.error || "TxFlow did not return a recognized fills response.",
+      }, { status: 502 });
+    }
+
+    const fills = rawFills
       .filter((fill: any) => !coin || String(fill.coin ?? "").toLowerCase() === coin.toLowerCase())
       .map((fill: any) => ({
         id: String(fill.tid ?? fill.hash ?? `${fill.time}-${fill.coin}-${fill.side}`),
@@ -44,14 +67,15 @@ export async function GET(request: Request) {
         time: Number(fill.time) || 0,
       }));
 
+    const hasMore = result.data?.hasMore === true;
     return Response.json({
       success: true,
       wallet: wallet.toLowerCase(),
       fills,
       count: fills.length,
-      hasMore: result.data.hasMore === true,
-      nextOffset: result.data.hasMore === true ? offset + result.data.data.length : null,
-      note: "History is reconstructed from exchange fills, not periodic position snapshots. Older data may be unavailable.",
+      hasMore,
+      nextOffset: hasMore ? offset + rawFills.length : null,
+      note: "History is reconstructed from exchange fills over the last 365 days, not periodic position snapshots. Older data may be unavailable.",
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Trader position history API error:", error);
