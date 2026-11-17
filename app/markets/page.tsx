@@ -474,13 +474,14 @@ export default function MarketsPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const requestInFlight = useRef(false);
   const requestVersion = useRef(0);
+  const hasSuccessfulLoad = useRef(false);
 
   const loadMarkets = useCallback(async (_manual = false) => {
     if (requestInFlight.current) return;
 
     requestInFlight.current = true;
     const currentRequest = ++requestVersion.current;
-    if (lastUpdated) setRefreshing(true);
+    if (hasSuccessfulLoad.current) setRefreshing(true);
 
     try {
       const [listResponse, dataResponse] = await Promise.all([
@@ -505,6 +506,7 @@ export default function MarketsPage() {
         setMarkets(listResult);
         setMarketData(dataResult);
         setLastUpdated(new Date());
+        hasSuccessfulLoad.current = true;
         setError("");
       }
     } catch (err) {
@@ -522,7 +524,7 @@ export default function MarketsPage() {
         setRefreshing(false);
       }
     }
-  }, [lastUpdated]);
+  }, []);
 
   useEffect(() => {
     void loadMarkets();
