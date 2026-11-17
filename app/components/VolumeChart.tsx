@@ -184,7 +184,7 @@ export default function VolumeChart({ coin }: { coin?: string }) {
         background: "#0d0d0d",
         border: "1px solid #222",
         borderRadius: "8px",
-        padding: "24px",
+        padding: "clamp(18px, 2.4vw, 28px)",
       }}
     >
       <div
@@ -272,7 +272,7 @@ export default function VolumeChart({ coin }: { coin?: string }) {
           <p
             style={{
               color: "#777",
-              fontSize: "11px",
+              fontSize: "12px",
               margin: "0 0 6px",
             }}
           >
@@ -281,7 +281,7 @@ export default function VolumeChart({ coin }: { coin?: string }) {
 
           <h3
             style={{
-              fontSize: "28px",
+              fontSize: "30px",
               lineHeight: 1.2,
               fontWeight: 600,
               color: "#A3E635",
@@ -297,7 +297,7 @@ export default function VolumeChart({ coin }: { coin?: string }) {
         </p>
       </div>
 
-      <div style={{ width: "100%", height: "320px" }}>
+      <div style={{ width: "100%", height: "360px" }}>
         {loading ? (
           <div style={messageStyle}>Loading historical data...</div>
         ) : error ? (
@@ -332,7 +332,7 @@ export default function VolumeChart({ coin }: { coin?: string }) {
               <XAxis
                 dataKey="timeLabel"
                 stroke="#555"
-                tick={{ fill: "#888", fontSize: 11 }}
+                tick={{ fill: "#888", fontSize: 12 }}
                 minTickGap={24}
                 tickLine={false}
                 axisLine={{ stroke: "#333" }}
@@ -344,7 +344,7 @@ export default function VolumeChart({ coin }: { coin?: string }) {
                 tickFormatter={(value) =>
                   formatCompactMoney(Number(value))
                 }
-                width={82}
+                width={88}
                 tickLine={false}
                 axisLine={false}
                 domain={["auto", "auto"]}
@@ -381,7 +381,7 @@ export default function VolumeChart({ coin }: { coin?: string }) {
                 dataKey="value"
                 name={selectedMetric?.label ?? "Value"}
                 stroke="#A3E635"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 dot={chartData.length <= 20 ? { r: 2, fill: "#A3E635" } : false}
                 activeDot={{ r: 4, fill: "#A3E635" }}
                 connectNulls={false}
