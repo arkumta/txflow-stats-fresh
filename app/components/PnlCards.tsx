@@ -19,9 +19,21 @@ type PnlResponse = {
 };
 
 const cards = [
-  { key: "24H", title: "24H NET REALIZED PNL" },
-  { key: "7D", title: "7D NET REALIZED PNL" },
-  { key: "SINCE_OCT_10", title: "NET REALIZED PNL SINCE OCT 10" },
+  {
+    key: "24H",
+    title: "Last 24 hours",
+    description: "Net realized PnL",
+  },
+  {
+    key: "7D",
+    title: "Last 7 days",
+    description: "Net realized PnL",
+  },
+  {
+    key: "SINCE_OCT_10",
+    title: "Since Oct 10",
+    description: "Net realized PnL · indexed period",
+  },
 ];
 
 function money(value: number) {
@@ -95,16 +107,27 @@ export default function PnlCards() {
                 padding: "22px",
               }}
             >
-              <p
-                style={{
-                  color: "#888",
-                  fontSize: "11px",
-                  letterSpacing: "0.7px",
-                  margin: "0 0 16px",
-                }}
-              >
-                {card.title}
-              </p>
+              <div style={{ marginBottom: "14px" }}>
+                <p
+                  style={{
+                    color: "#d7ddcf",
+                    fontSize: "13px",
+                    fontWeight: 650,
+                    margin: "0 0 5px",
+                  }}
+                >
+                  {card.title}
+                </p>
+                <p
+                  style={{
+                    color: "#929a88",
+                    fontSize: "11px",
+                    margin: 0,
+                  }}
+                >
+                  {card.description}
+                </p>
+              </div>
 
               <h3
                 style={{
