@@ -105,15 +105,7 @@ export default function FeesPage() {
   };
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "28px 22px 64px",
-        background: `radial-gradient(ellipse at 50% -15%, #1b2512 0%, ${C.bg} 48%)`,
-        color: C.text,
-        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-      }}
-    >
+    <main className="tools-page">
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
 
         <section style={{ marginBottom: 30 }}>
