@@ -41,14 +41,14 @@ type MarketBreakdown = {
 };
 
 const C = {
-  page: "#080a08",
-  panel: "#101410",
-  border: "#252d25",
+  page: "#090b08",
+  panel: "#10150e",
+  border: "#292f23",
   text: "#f3f7f1",
-  muted: "#8e9a8c",
-  dim: "#657063",
-  lime: "#b8f34a",
-  limeSoft: "rgba(184,243,74,.10)",
+  muted: "#929b88",
+  dim: "#77816d",
+  lime: "#c5f66b",
+  limeSoft: "rgba(197,246,107,.08)",
   red: "#ff7777",
 };
 
