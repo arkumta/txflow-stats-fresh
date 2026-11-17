@@ -8,6 +8,7 @@ const links = [
   { label: "Overview", href: "/" },
   { label: "Markets", href: "/markets" },
   { label: "Traders", href: "/traders" },
+  { label: "Positions", href: "/positions" },
   { label: "Fees", href: "/fees" },
 ];
 
