@@ -2142,3 +2142,67 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
 .home-shell .home-traders-table tbody tr:hover {
   background: var(--table-row-hover) !important;
 }
+
+
+/* Leaderboard page — align legacy black/acid-green styling with Txflow surfaces */
+.leaderboard-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 34px clamp(16px, 3vw, 28px) 70px;
+  color: #f2f4ed;
+  background: transparent;
+}
+.leaderboard-shell {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.leaderboard-back-link {
+  color: #c5f66b;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color .18s ease;
+}
+.leaderboard-back-link:hover { color: #e0ffad; }
+.leaderboard-header { margin: 28px 0 24px; }
+.leaderboard-eyebrow {
+  margin: 0;
+  color: #a9b995;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.leaderboard-header h1 {
+  margin: 9px 0;
+  color: #f2f4ed;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.12;
+  letter-spacing: -.045em;
+  font-weight: 750;
+}
+.leaderboard-description {
+  max-width: 650px;
+  margin: 0;
+  color: #929b88;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.leaderboard-page table { background: #10150e !important; }
+.leaderboard-page thead,
+.leaderboard-page thead th { background: #171e12 !important; }
+.leaderboard-page th {
+  color: #a9b995 !important;
+  border-color: rgba(151,177,112,.16) !important;
+}
+.leaderboard-page td {
+  color: #d6dfcc;
+  border-color: rgba(151,177,112,.16) !important;
+}
+.leaderboard-page tbody tr:hover {
+  background: rgba(197,246,107,.045) !important;
+}
+@media (max-width: 640px) {
+  .leaderboard-page { padding: 26px 14px 52px; }
+  .leaderboard-header { margin-top: 22px; }
+}
