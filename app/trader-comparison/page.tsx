@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   CartesianGrid,
@@ -74,7 +74,9 @@ function ComparisonContent() {
   const [results, setResults] = useState<TraderResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [hasCompared, setHasCompared] = useState(false);
+  const compareInFlight = useRef(false);
+  const compareVersion = useRef(0);
+  const compareController = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const initialWallet = searchParams.get("wallet") || "";
@@ -97,13 +99,12 @@ function ComparisonContent() {
   }
 
   async function compareTraders() {
+    if (compareInFlight.current) return;
     const wallets = slots
       .map((slot) => slot.wallet.trim().toLowerCase())
       .filter(Boolean);
 
     setError("");
-    setResults([]);
-    setHasCompared(false);
 
     if (wallets.length < 2) {
       setError("Enter at least two wallet addresses to compare.");
@@ -132,7 +133,7 @@ function ComparisonContent() {
         wallets.map(async (wallet) => {
           const response = await fetch(
             `/api/trader-performance?wallet=${encodeURIComponent(wallet)}&days=365`,
-            { cache: "no-store" }
+            { cache: "no-store", signal: controller.signal }
           );
 
           const data = await response.json();
@@ -159,6 +160,13 @@ function ComparisonContent() {
       setLoading(false);
     }
   }
+
+  useEffect(() => () => {
+    compareVersion.current += 1;
+    compareController.current?.abort();
+    compareController.current = null;
+    compareInFlight.current = false;
+  }, []);
 
   const chartData = useMemo(() => {
     const dates = new Set<string>();
@@ -283,7 +291,7 @@ function ComparisonContent() {
           </div>
         )}
 
-        {hasCompared && results.length > 0 && (
+        {results.length > 0 && (
           <>
             <section className="leader-panel">
               <div>
