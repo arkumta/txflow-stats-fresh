@@ -71,7 +71,7 @@ function TraderProfileContent() {
   const [activityError, setActivityError] = useState("");
   const [marketsError, setMarketsError] = useState("");
   const [copied, setCopied] = useState(false);
-  const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyResetTimer = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
