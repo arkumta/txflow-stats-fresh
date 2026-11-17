@@ -154,7 +154,8 @@ export async function GET() {
 
     return Response.json(
       {
-        success: failures.length === 0,
+        success: true,
+        partial: failures.length > 0,
         message:
           failures.length === 0
             ? "Snapshots saved for all active markets."
@@ -167,7 +168,7 @@ export async function GET() {
       },
       {
         headers: { "Cache-Control": "no-store" },
-        status: failures.length === 0 ? 200 : 207,
+        status: 200,
       }
     );
   } catch (error) {
