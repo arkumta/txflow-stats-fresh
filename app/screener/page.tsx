@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 type Market = {
@@ -66,31 +66,60 @@ export default function ScreenerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
+  const inFlight = useRef(false);
+  const queuedRefresh = useRef(false);
+  const requestId = useRef(0);
 
   const load = useCallback(async () => {
+    if (inFlight.current) {
+      queuedRefresh.current = true;
+      return;
+    }
+
+    inFlight.current = true;
+    const currentRequest = ++requestId.current;
+    setLoading(true);
+
     try {
       const [metaRes, dataRes] = await Promise.all([
         fetch("/api/market-list", { cache: "no-store" }),
         fetch("/api/market-data", { cache: "no-store" }),
       ]);
       if (!metaRes.ok || !dataRes.ok) throw new Error("Market data is temporarily unavailable.");
+
       const [meta, data] = await Promise.all([metaRes.json(), dataRes.json()]);
-      if (!Array.isArray(meta) || !Array.isArray(data)) throw new Error("Unexpected market data response.");
-      setMarkets(meta);
-      setContexts(data);
-      setUpdated(new Date());
-      setError("");
+      if (!Array.isArray(meta) || !Array.isArray(data)) {
+        throw new Error("Unexpected market data response.");
+      }
+
+      if (currentRequest === requestId.current) {
+        setMarkets(meta);
+        setContexts(data);
+        setUpdated(new Date());
+        setError("");
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to load markets.");
+      if (currentRequest === requestId.current) {
+        setError(e instanceof Error ? e.message : "Unable to load markets.");
+      }
     } finally {
-      setLoading(false);
+      inFlight.current = false;
+      if (currentRequest === requestId.current) setLoading(false);
+
+      if (queuedRefresh.current) {
+        queuedRefresh.current = false;
+        window.setTimeout(() => void load(), 0);
+      }
     }
   }, []);
 
   useEffect(() => {
     void load();
     const timer = window.setInterval(() => void load(), 30000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      requestId.current += 1;
+    };
   }, [load]);
 
   const rows = useMemo<Row[]>(() => {
@@ -171,8 +200,11 @@ export default function ScreenerPage() {
           <strong style={{ fontSize: 14 }}>Matching markets <span style={{ color: MUTED, fontWeight: 400 }}>({rows.length})</span></strong>
           <button type="button" onClick={() => setDirection((value) => value === "desc" ? "asc" : "desc")} style={{ ...selectStyle, cursor: "pointer" }}>Order: {direction === "desc" ? "Highest first" : "Lowest first"}</button>
         </div>
-        {error && <p style={{ padding: 18, color: "#ff9999", fontSize: 12 }}>{error} <button onClick={() => void load()} style={{ color: LIME, background: "none", border: 0, cursor: "pointer" }}>Retry</button></p>}
-        {loading ? <p style={{ padding: 30, color: MUTED, textAlign: "center" }}>Loading market data…</p> : rows.length === 0 ? <p style={{ padding: 30, color: MUTED, textAlign: "center" }}>No markets match these filters. Try lowering the minimum values.</p> : (
+        {error && <div role="status" style={{ margin: 16, padding: 12, borderRadius: 8, border: "1px solid #75443e", background: "#241613", color: "#ffb0a8", fontSize: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span>{updated ? "Refresh failed. Showing the last successful market data. " : ""}{error}</span>
+          <button onClick={() => void load()} disabled={loading} style={{ color: LIME, background: "none", border: 0, cursor: loading ? "wait" : "pointer" }}>{loading ? "Retrying…" : "Retry"}</button>
+        </div>}
+        {loading && !updated ? <p style={{ padding: 30, color: MUTED, textAlign: "center" }}>Loading market data…</p> : rows.length === 0 ? <p style={{ padding: 30, color: MUTED, textAlign: "center" }}>{markets.length === 0 ? "No market data is available yet." : "No markets match these filters. Try lowering the minimum values."}</p> : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", minWidth: 820, borderCollapse: "collapse", fontSize: 12 }}>
               <thead><tr>{["MARKET","LAST PRICE","24H CHANGE","24H VOLUME","OPEN INTEREST","FUNDING","MAX LEVERAGE"].map((heading) => <th key={heading} style={{ padding: "13px 12px", textAlign: heading === "MARKET" ? "left" : "right", color: MUTED, fontSize: 9, letterSpacing: 1, borderBottom: "1px solid #30382b" }}>{heading}</th>)}</tr></thead>
