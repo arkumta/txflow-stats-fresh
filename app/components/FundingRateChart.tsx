@@ -115,7 +115,7 @@ export default function FundingRateChart({ coin }: { coin: string }) {
   };
 
   return (
-    <section style={{
+    <section className="funding-rate-panel" style={{
       marginTop: 22,
       marginBottom: 22,
       background: "#0d0f0b",
