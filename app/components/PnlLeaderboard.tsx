@@ -209,6 +209,7 @@ export default function PnlLeaderboard() {
 
   return (
     <section
+      className="pnl-leaderboard"
       style={{
         marginTop: "32px",
         background: "#0d0d0d",
@@ -463,7 +464,7 @@ export default function PnlLeaderboard() {
           )}
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
+        <div className="pnl-leaderboard-table-wrap" style={{ overflowX: "auto" }}>
           <table
             style={{
               width: "100%",
