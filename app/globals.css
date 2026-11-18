@@ -3025,3 +3025,97 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
     font-size: 17px !important;
   }
 }
+
+
+/* Trader intelligence — open positions and execution history */
+.trader-intelligence {
+  color: #f2f4ed;
+  gap: 30px !important;
+}
+.trader-intelligence > section {
+  min-width: 0;
+}
+.trader-intelligence h2 {
+  color: #f2f4ed !important;
+  font-size: 20px !important;
+  font-weight: 760 !important;
+  letter-spacing: -.025em;
+}
+.trader-intelligence p {
+  line-height: 1.55;
+}
+.trader-intelligence-panel {
+  border: 1px solid rgba(151,177,112,.18) !important;
+  border-radius: 13px !important;
+  background: #10150e !important;
+  box-shadow: none !important;
+}
+.trader-intelligence-table-wrap {
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #52613e #10150e;
+}
+.trader-intelligence table {
+  min-width: 850px;
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0;
+  background: #10150e;
+  font-variant-numeric: tabular-nums;
+}
+.trader-intelligence thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 13px 14px !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid rgba(151,177,112,.2) !important;
+  background: #171e12;
+  color: #a9b995 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: .065em;
+  text-transform: uppercase;
+}
+.trader-intelligence tbody td {
+  padding: 12px 14px !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid rgba(151,177,112,.11);
+  color: #d6dfcc;
+  font-size: 12px !important;
+}
+.trader-intelligence tbody tr:last-child td {
+  border-bottom: 0;
+}
+.trader-intelligence tbody tr:hover {
+  background: rgba(197,246,107,.045);
+}
+.trader-intelligence button {
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.trader-intelligence button:hover {
+  border-color: rgba(197,246,107,.55) !important;
+  filter: brightness(1.08);
+}
+.trader-intelligence button:focus-visible {
+  outline: 2px solid rgba(197,246,107,.7);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .trader-intelligence {
+    gap: 23px !important;
+  }
+  .trader-intelligence h2 {
+    font-size: 18px !important;
+  }
+  .trader-intelligence-table-wrap {
+    margin-inline: 0;
+  }
+  .trader-intelligence table {
+    min-width: 780px;
+  }
+  .trader-intelligence thead th,
+  .trader-intelligence tbody td {
+    padding: 11px 12px !important;
+  }
+}
