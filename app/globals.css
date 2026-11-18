@@ -2950,3 +2950,78 @@ main.home-page .home-shell [style*="background: rgb(13, 13, 13)"] {
     height: 340px !important;
   }
 }
+
+
+/* Funding rate chart — consistent charcoal/lime analytics styling */
+.funding-rate-panel {
+  padding: 22px !important;
+  border: 1px solid rgba(151,177,112,.18) !important;
+  border-radius: 14px !important;
+  background: #10150e !important;
+  box-shadow: none !important;
+  color: #f2f4ed;
+}
+.funding-rate-panel h2 {
+  color: #f2f4ed !important;
+  font-size: 21px !important;
+  font-weight: 760 !important;
+  letter-spacing: -.025em;
+}
+.funding-rate-panel select,
+.funding-rate-panel button {
+  min-height: 40px;
+  border: 1px solid #35422a !important;
+  border-radius: 9px !important;
+  background: #0b0f09 !important;
+  color: #edf2e6 !important;
+  font: inherit;
+  font-size: 12px;
+}
+.funding-rate-panel select:focus-visible,
+.funding-rate-panel button:focus-visible {
+  outline: 2px solid rgba(197,246,107,.7);
+  outline-offset: 2px;
+}
+.funding-rate-panel button {
+  padding: 9px 14px !important;
+  background: #20291a !important;
+  color: #d0f28d !important;
+  font-weight: 700;
+}
+.funding-rate-panel button:hover {
+  border-color: rgba(197,246,107,.6) !important;
+  background: #29351f !important;
+}
+.funding-rate-panel > div[style*="grid"] > div {
+  border-color: rgba(151,177,112,.16) !important;
+  border-radius: 11px !important;
+  background: #141a10 !important;
+}
+.funding-rate-panel > div[style*="grid"] > div > div:last-child {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.025em;
+}
+.funding-rate-panel table,
+.funding-rate-panel svg {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .funding-rate-panel {
+    padding: 15px !important;
+    margin-block: 18px !important;
+    border-radius: 12px !important;
+  }
+  .funding-rate-panel h2 {
+    font-size: 18px !important;
+  }
+  .funding-rate-panel > div[style*="grid"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  .funding-rate-panel > div[style*="grid"] > div {
+    padding: 12px !important;
+  }
+  .funding-rate-panel > div[style*="grid"] > div > div:last-child {
+    font-size: 17px !important;
+  }
+}
