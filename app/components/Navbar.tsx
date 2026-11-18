@@ -11,6 +11,7 @@ const links = [
   { label: "Positions", href: "/positions" },
   { label: "Leaderboard", href: "/leaderboard" },
   { label: "Tools", href: "/fees" },
+  { label: "Point Calculator", href: "https://perppoints.com/", external: true },
 ];
 
 function NavbarContent() {
@@ -74,13 +75,17 @@ function NavbarContent() {
         <div className={`txflow-nav-content${menuOpen ? " txflow-nav-content-open" : ""}`}>
           <div className="txflow-nav-links">
             {links.map((link) => {
-              const active = link.href === "/"
-                ? pathname === "/"
-                : pathname === link.href || pathname.startsWith(`${link.href}/`);
+              const active = link.external
+                ? false
+                : link.href === "/"
+                  ? pathname === "/"
+                  : pathname === link.href || pathname.startsWith(`${link.href}/`);
               return (
                 <a
                   key={link.href}
                   href={link.href}
+                  target={link.external ? "_blank" : undefined}
+                  rel={link.external ? "noopener noreferrer" : undefined}
                   className={`txflow-nav-link${active ? " txflow-nav-link-active" : ""}`}
                   aria-current={active ? "page" : undefined}
                   onClick={() => setMenuOpen(false)}
